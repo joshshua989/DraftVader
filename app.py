@@ -1,56 +1,64 @@
 # ---------------------- Libraries ----------------------
+import os
 import re
+
 import streamlit as st
+import psutil
+import signal
 from load_data import get_regular_season_totals, get_adp_data, get_season_projections_qb, get_season_projections_rb
 from load_data import get_season_projections_wr, get_season_projections_te, get_season_projections_k
 from load_data import get_season_projections_dst
 # ---------------------- Libraries ----------------------
 
+# Set the page configuration
+st.set_page_config(page_title="🏈 DraftVader v1.0 🤖")
 
-# ---------------------- Script Functions ----------------------
-def build_team_roster(team_picks):
-    starters = {"QB": [], "RB": [], "WR": [], "TE": [], "FLEX": []}
-    bench = []
-    detailed_picks = []
-    for p_name in team_picks:
-        player_info = next((p for p in adp_dict if p['name'] == p_name), None)
-        if player_info:
-            detailed_picks.append(player_info)
+# ---------------------- Session State ----------------------
+def initialize_session_state():
+    defaults = {
+        "teams": {f"Team {i+1}": [] for i in range(12)},
+        "pick_order": list(range(1, 13)),
+        "pick_number": 0,
+        "last_pick": None,
+        "last_team": None,
+    }
+    for key, value in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
 
-    detailed_picks.sort(key=lambda p: p['adp'])
+def next_pick():
+    st.session_state.last_pick = None
+    st.session_state.last_team = None
+    st.session_state.pick_number += 1
 
-    for player in detailed_picks:
-        pos = player['pos']
-        if pos == "QB" and len(starters["QB"]) < 1:
-            starters["QB"].append(player)
-        elif pos == "RB" and len(starters["RB"]) < 2:
-            starters["RB"].append(player)
-        elif pos == "WR" and len(starters["WR"]) < 3:
-            starters["WR"].append(player)
-        elif pos == "TE" and len(starters["TE"]) < 1:
-            starters["TE"].append(player)
-        elif pos in ["RB", "WR", "TE"] and len(starters["FLEX"]) < 1:
-            starters["FLEX"].append(player)
-        else:
-            bench.append(player)
-    return starters, bench
+def undo_last_pick():
+    if st.session_state.last_team and st.session_state.last_pick in st.session_state.teams[st.session_state.last_team]:
+        st.session_state.teams[st.session_state.last_team].remove(st.session_state.last_pick)
+        st.session_state.last_pick = None
+        st.session_state.last_team = None
+# ---------------------- Session State ----------------------
 
-def get_available_players(players_2025):
-    taken = [p for picks in st.session_state.teams.values() for p in picks]
-    return sorted(
-        [p for p in players_2025 if p['name'] not in taken],
-        key=lambda x: x['adp'], reverse=True
-    )
 
-def get_pick_count():
-    round_number = st.session_state.pick_number // len(st.session_state.pick_order)
-    pick_in_round = st.session_state.pick_number % len(st.session_state.pick_order)
+# ---------------------- SHUTDOWN (Development) ----------------------
+def shutdown():
+    pid = os.getpid()
+    parent = psutil.Process(pid)
+    for child in parent.children(recursive=True):
+        child.send_signal(signal.SIGTERM)
+    parent.send_signal(signal.SIGTERM)
 
-    if round_number % 2 == 0:
-        return st.session_state.pick_order[pick_in_round]
-    else:
-        return st.session_state.pick_order[::-1][pick_in_round]
+# Use columns to center the shutdown button
+col1, col2, col3 = st.columns([2, 1, 2])
 
+# Add the shutdown button for local testing
+with col2:
+    if st.button("🔴 Shut Down"):
+        st.warning("Shutting down the app...")
+        shutdown()
+# ---------------------- SHUTDOWN (Development) ----------------------
+
+
+# ---------------------- Style ----------------------
 def apply_selectbox_style():
     st.markdown(
         """
@@ -73,7 +81,10 @@ def styled_header(title: str):
         f"<h1 style='text-align: center; font-size: 48px; color: #0076B6;'>{title}</h1>",
         unsafe_allow_html=True
     )
+# ---------------------- Style ----------------------
 
+
+# ---------------------- Data Functions ----------------------
 @st.cache_data
 def load_player_stats(stat_str: str, seasons):
     match stat_str:
@@ -150,12 +161,6 @@ def load_season_projections_qb():
     print("---------------------------------------------------------------")
     return projections_qb
 
-# Function to get the primary position (e.g., "QB" from "QB1", "RB2", etc.)
-def get_primary_position(position):
-    # Use regular expression to capture the first part of the position (e.g., "QB", "RB", etc.)
-    match = re.match(r"([A-Za-z]+)", position)
-    return match.group(1) if match else position  # Default to the original position if no match
-
 @st.cache_data
 def load_adp_data():
     print("---------------------------------------------------------------")
@@ -169,24 +174,66 @@ def load_adp_data():
         print(player)
     print("---------------------------------------------------------------")
     return adp_data
+# ---------------------- Data Functions ----------------------
+
+
+# ---------------------- Script Functions ----------------------
+def build_team_roster(team_picks):
+    starters = {"QB": [], "RB": [], "WR": [], "TE": [], "FLEX": []}
+    bench = []
+    detailed_picks = []
+    for p_name in team_picks:
+        player_info = next((p for p in adp_dict if p['name'] == p_name), None)
+        if player_info:
+            detailed_picks.append(player_info)
+
+    detailed_picks.sort(key=lambda p: p['adp'])
+
+    for player in detailed_picks:
+        pos = player['pos']
+        if pos == "QB" and len(starters["QB"]) < 1:
+            starters["QB"].append(player)
+        elif pos == "RB" and len(starters["RB"]) < 2:
+            starters["RB"].append(player)
+        elif pos == "WR" and len(starters["WR"]) < 3:
+            starters["WR"].append(player)
+        elif pos == "TE" and len(starters["TE"]) < 1:
+            starters["TE"].append(player)
+        elif pos in ["RB", "WR", "TE"] and len(starters["FLEX"]) < 1:
+            starters["FLEX"].append(player)
+        else:
+            bench.append(player)
+    return starters, bench
+
+def get_available_players(players_2025):
+    taken = [p for picks in st.session_state.teams.values() for p in picks]
+    return sorted(
+        [p for p in players_2025 if p['name'] not in taken],
+        key=lambda x: x['adp'], reverse=True
+    )
+
+def get_pick_count():
+    round_number = st.session_state.pick_number // len(st.session_state.pick_order)
+    pick_in_round = st.session_state.pick_number % len(st.session_state.pick_order)
+
+    if round_number % 2 == 0:
+        return st.session_state.pick_order[pick_in_round]
+    else:
+        return st.session_state.pick_order[::-1][pick_in_round]
+
+# Function to get the primary position (e.g., "QB" from "QB1", "RB2", etc.)
+def get_primary_position(position):
+    # Use regular expression to capture the first part of the position (e.g., "QB", "RB", etc.)
+    match = re.match(r"([A-Za-z]+)", position)
+    return match.group(1) if match else position  # Default to the original position if no match
 # ---------------------- Script Functions ----------------------
 
 
 # ---------------------- Data Handling ----------------------
-st.set_page_config(page_title="🏈 DraftVader v1.0 🤖")
-
-if "teams" not in st.session_state:
-    st.session_state.teams = {f"Team {i+1}": [] for i in range(12)}
-if "pick_order" not in st.session_state:
-    st.session_state.pick_order = list(range(1, 13))
-if "pick_number" not in st.session_state:
-    st.session_state.pick_number = 0
-if "last_pick" not in st.session_state:
-    st.session_state.last_pick = None
-if "last_team" not in st.session_state:
-    st.session_state.last_team = None
+initialize_session_state()
 
 adp_dict = load_adp_data()
+
 season_projections_qb = load_season_projections_qb()
 season_projections_rb = load_season_projections_rb()
 season_projections_wr = load_season_projections_wr()
@@ -231,6 +278,7 @@ primary_positions = sorted(set(p['pos'] for p in available_players_list))
 position_filter_options = ["All"] + [pos for pos in primary_positions if pos in valid_positions]
 
 col1, col2 = st.columns(2)
+
 # Apply the position filter and selectbox
 with col1:
     player_choice = st.selectbox(
@@ -253,18 +301,11 @@ if st.session_state.last_pick:
     col_next, col_undo = st.columns(2)
 
     with col_next:
-        if st.button("➡️ Next Pick >>>"):
-            st.session_state.last_pick = None
-            st.session_state.last_team = None
-            st.session_state.pick_number += 1
+        if st.button("➡️ Next Pick >>>", on_click=next_pick):
             st.rerun()
 
     with col_undo:
-        if st.button("↩️ Undo Last Pick"):
-            if st.session_state.last_team and st.session_state.last_pick in st.session_state.teams[st.session_state.last_team]:
-                st.session_state.teams[st.session_state.last_team].remove(st.session_state.last_pick)
-            st.session_state.last_pick = None
-            st.session_state.last_team = None
+        if st.button("↩️ Undo Last Pick", on_click=undo_last_pick):
             st.rerun()
 
 else:
