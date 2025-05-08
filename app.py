@@ -10,12 +10,149 @@ from load_data import get_season_projections_wr, get_season_projections_te, get_
 from load_data import get_season_projections_dst
 # ---------------------- Libraries ----------------------
 
-
 # Streamlit function call used to configure the page settings
 st.set_page_config(
     page_title="🏈 DraftVader v1.0 🤖",
     page_icon="🚀"
 )
+
+# ---------------------- Data Functions ----------------------
+# function to initialize the session state variables
+def initialize_session_state():
+    defaults = {
+        # Creates a dictionary with keys "Team 1" to "Team 12", each mapped to an empty list.
+        # This represents the draft picks for each of the 12 teams.
+        "teams": {f"Team {i+1}": [] for i in range(12)},
+        # A list of integers from 1 to 12, representing the draft pick order.
+        "pick_order": list(range(1, 13)),
+        # An integer representing the current pick number, starting from 0.
+        "pick_number": 0,
+        # Stores the last drafted player, initially set to None.
+        "last_pick": None,
+        # Stores the last team that picked, initially set to None.
+        "last_team": None,
+    }
+    # The for loop iterates over each key-value pair in the defaults dictionary:
+    for key, value in defaults.items():
+        if key not in st.session_state: # Checks if the key is already in st.session_state.
+            st.session_state[key] = value # If not, it sets the key in the session state with the corresponding value.
+
+@st.cache_data
+def load_adp_data():
+    print("---------------------------------------------------------------")
+    print("⏳ Scraping ADP data from 'https://www.fantasypros.com/nfl/adp/best-ball-overall.php' ...")
+    adp_data = get_adp_data()
+    for player in adp_data:
+        player['pos'] = get_primary_position(player['pos'])
+    print("🧠 ADP data loaded!\n")
+    print("Data summary:")
+    for player in adp_data[:5]:
+        print(player)
+    print("---------------------------------------------------------------")
+    return adp_data
+
+@st.cache_data
+def load_season_projections_qb():
+    print("⏳ Scraping QB Season Projections from 'https://www.fantasypros.com/nfl/projections/qb.php?week=draft' ...")
+    projections_qb = get_season_projections_qb()
+    print("🧠 QB Season Projections loaded!\n")
+    print("Data summary:")
+    for qb in projections_qb[:5]:
+        print(qb)
+    print("---------------------------------------------------------------")
+    return projections_qb
+
+@st.cache_data
+def load_season_projections_rb():
+    print("⏳ Scraping RB Season Projections from 'https://www.fantasypros.com/nfl/projections/rb.php?week=draft&scoring=PPR&week=draft' ...")
+    projections_rb = get_season_projections_rb()
+    print("🧠 RB Season Projections loaded!\n")
+    print("Data summary:")
+    for rb in projections_rb[:5]:
+        print(rb)
+    print("---------------------------------------------------------------")
+    return projections_rb
+
+@st.cache_data
+def load_season_projections_wr():
+    print("⏳ Scraping WR Season Projections from 'https://www.fantasypros.com/nfl/projections/wr.php?week=draft&scoring=PPR&week=draft' ...")
+    projections_wr = get_season_projections_wr()
+    print("🧠 WR Season Projections loaded!\n")
+    print("Data summary:")
+    for wr in projections_wr[:5]:
+        print(wr)
+    print("---------------------------------------------------------------")
+    return projections_wr
+
+@st.cache_data
+def load_season_projections_te():
+    print("⏳ Scraping TE Season Projections from 'https://www.fantasypros.com/nfl/projections/te.php?week=draft&scoring=PPR&week=draft' ...")
+    projections_te = get_season_projections_te()
+    print("🧠 TE Season Projections loaded!\n")
+    print("Data summary:")
+    for te in projections_te[:5]:
+        print(te)
+    print("---------------------------------------------------------------")
+    return projections_te
+
+@st.cache_data
+def load_season_projections_k():
+    print("⏳ Scraping Kicker Season Projections from 'https://www.fantasypros.com/nfl/projections/k.php?week=draft' ...")
+    projections_k = get_season_projections_k()
+    print("🧠 Kicker Season Projections loaded!\n")
+    print("Data summary:")
+    for k in projections_k[:5]:
+        print(k)
+    print("---------------------------------------------------------------")
+    return projections_k
+
+@st.cache_data
+def load_season_projections_dst():
+    print("⏳ Scraping DST Season Projections from 'https://www.fantasypros.com/nfl/projections/dst.php?week=draft' ...")
+    projections_dst = get_season_projections_dst()
+    print("🧠 DST Season Projections loaded!\n")
+    print("Data summary:")
+    for dst in projections_dst[:5]:
+        print(dst)
+    print("---------------------------------------------------------------")
+    return projections_dst
+
+@st.cache_data
+def load_player_stats(stat_str: str, seasons):
+    match stat_str:
+        case "totals":
+            return get_regular_season_totals(seasons)
+        case _:
+            print(f"Load Failure! Could not recognize stat code: {stat_str}")
+            st.markdown(f"Load Failure! Could not recognize stat code: {stat_str}")
+            return
+# ---------------------- Data Functions ----------------------
+
+
+# ---------------------- Style ----------------------
+def apply_selectbox_style():
+    st.markdown(
+        """
+        <style>
+        .stSelectbox > div[data-baseweb="select"] {
+            min-height: 35px;
+            max-width: 300px;
+        }
+        .stSelectbox label {
+            font-size: 14px;
+            margin-bottom: 0.2rem;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+def styled_header(title: str):
+    st.markdown(
+        f"<h1 style='text-align: center; font-size: 48px; color: #0076B6;'>{title}</h1>",
+        unsafe_allow_html=True
+    )
+# ---------------------- Style ----------------------
 
 
 # ---------------------- Button Callbacks ----------------------
@@ -49,145 +186,6 @@ with col2:
         st.warning("Shutting down the app...")
         shutdown()
 # ---------------------- SHUTDOWN (Development) ----------------------
-
-
-# ---------------------- Style ----------------------
-def apply_selectbox_style():
-    st.markdown(
-        """
-        <style>
-        .stSelectbox > div[data-baseweb="select"] {
-            min-height: 35px;
-            max-width: 300px;
-        }
-        .stSelectbox label {
-            font-size: 14px;
-            margin-bottom: 0.2rem;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-
-def styled_header(title: str):
-    st.markdown(
-        f"<h1 style='text-align: center; font-size: 48px; color: #0076B6;'>{title}</h1>",
-        unsafe_allow_html=True
-    )
-# ---------------------- Style ----------------------
-
-
-# ---------------------- Data Functions ----------------------
-@st.cache_data
-def load_player_stats(stat_str: str, seasons):
-    match stat_str:
-        case "totals":
-            return get_regular_season_totals(seasons)
-        case _:
-            print(f"Load Failure! Could not recognize stat code: {stat_str}")
-            st.markdown(f"Load Failure! Could not recognize stat code: {stat_str}")
-            return
-
-@st.cache_data
-def load_season_projections_dst():
-    print("⏳ Scraping DST Season Projections from 'https://www.fantasypros.com/nfl/projections/dst.php?week=draft' ...")
-    projections_dst = get_season_projections_dst()
-    print("🧠 DST Season Projections loaded!\n")
-    print("Data summary:")
-    for dst in projections_dst[:5]:
-        print(dst)
-    print("---------------------------------------------------------------")
-    return projections_dst
-
-@st.cache_data
-def load_season_projections_k():
-    print("⏳ Scraping Kicker Season Projections from 'https://www.fantasypros.com/nfl/projections/k.php?week=draft' ...")
-    projections_k = get_season_projections_k()
-    print("🧠 Kicker Season Projections loaded!\n")
-    print("Data summary:")
-    for k in projections_k[:5]:
-        print(k)
-    print("---------------------------------------------------------------")
-    return projections_k
-
-@st.cache_data
-def load_season_projections_te():
-    print("⏳ Scraping TE Season Projections from 'https://www.fantasypros.com/nfl/projections/te.php?week=draft&scoring=PPR&week=draft' ...")
-    projections_te = get_season_projections_te()
-    print("🧠 TE Season Projections loaded!\n")
-    print("Data summary:")
-    for te in projections_te[:5]:
-        print(te)
-    print("---------------------------------------------------------------")
-    return projections_te
-
-@st.cache_data
-def load_season_projections_wr():
-    print("⏳ Scraping WR Season Projections from 'https://www.fantasypros.com/nfl/projections/wr.php?week=draft&scoring=PPR&week=draft' ...")
-    projections_wr = get_season_projections_wr()
-    print("🧠 WR Season Projections loaded!\n")
-    print("Data summary:")
-    for wr in projections_wr[:5]:
-        print(wr)
-    print("---------------------------------------------------------------")
-    return projections_wr
-
-@st.cache_data
-def load_season_projections_rb():
-    print("⏳ Scraping RB Season Projections from 'https://www.fantasypros.com/nfl/projections/rb.php?week=draft&scoring=PPR&week=draft' ...")
-    projections_rb = get_season_projections_rb()
-    print("🧠 RB Season Projections loaded!\n")
-    print("Data summary:")
-    for rb in projections_rb[:5]:
-        print(rb)
-    print("---------------------------------------------------------------")
-    return projections_rb
-
-@st.cache_data
-def load_season_projections_qb():
-    print("⏳ Scraping QB Season Projections from 'https://www.fantasypros.com/nfl/projections/qb.php?week=draft' ...")
-    projections_qb = get_season_projections_qb()
-    print("🧠 QB Season Projections loaded!\n")
-    print("Data summary:")
-    for qb in projections_qb[:5]:
-        print(qb)
-    print("---------------------------------------------------------------")
-    return projections_qb
-
-@st.cache_data
-def load_adp_data():
-    print("---------------------------------------------------------------")
-    print("⏳ Scraping ADP data from 'https://www.fantasypros.com/nfl/adp/best-ball-overall.php' ...")
-    adp_data = get_adp_data()
-    for player in adp_data:
-        player['pos'] = get_primary_position(player['pos'])
-    print("🧠 ADP data loaded!\n")
-    print("Data summary:")
-    for player in adp_data[:5]:
-        print(player)
-    print("---------------------------------------------------------------")
-    return adp_data
-
-# function to initialize the session state variables
-def initialize_session_state():
-    defaults = {
-        # Creates a dictionary with keys "Team 1" to "Team 12", each mapped to an empty list.
-        # This represents the draft picks for each of the 12 teams.
-        "teams": {f"Team {i+1}": [] for i in range(12)},
-        # A list of integers from 1 to 12, representing the draft pick order.
-        "pick_order": list(range(1, 13)),
-        # An integer representing the current pick number, starting from 0.
-        "pick_number": 0,
-        # Stores the last drafted player, initially set to None.
-        "last_pick": None,
-        # Stores the last team that picked, initially set to None.
-        "last_team": None,
-    }
-    # The for loop iterates over each key-value pair in the defaults dictionary:
-    for key, value in defaults.items():
-        if key not in st.session_state: # Checks if the key is already in st.session_state.
-            st.session_state[key] = value # If not, it sets the key in the session state with the corresponding value.
-# ---------------------- Data Functions ----------------------
 
 
 # ---------------------- Script Functions ----------------------
