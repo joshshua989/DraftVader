@@ -10,6 +10,7 @@ from load_data import get_season_projections_wr, get_season_projections_te, get_
 from load_data import get_season_projections_dst
 # ---------------------- Libraries ----------------------
 
+
 # Set the page configuration
 st.set_page_config(page_title="🏈 DraftVader v1.0 🤖")
 
@@ -24,6 +25,7 @@ def initialize_session_state():
     for key, value in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = value
+
 
 # ---------------------- Button Callbacks ----------------------
 def next_pick():
@@ -244,7 +246,7 @@ def get_primary_position(position):
 # ---------------------- Script Functions ----------------------
 
 
-# ---------------------- Data Handling ----------------------
+# ---------------------- Data Handling - BEGIN ----------------------
 # initialize session state variables to ensure they have default values before the user interacts with the app.
 initialize_session_state()
 
@@ -277,7 +279,7 @@ season_projections_dst = load_season_projections_dst()
 #      filename = f"{stat_type.upper()}_STATS.csv"
 #      df.to_csv(filename, index=False)
 #      st.write(f"Exported {filename}")
-# ---------------------- Data Handling ----------------------
+# ---------------------- Data Handling - BEGIN ----------------------
 
 
 # ---------------------- User Interface ----------------------
