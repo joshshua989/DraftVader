@@ -2,7 +2,7 @@
 import requests
 import pandas as pd
 from bs4 import BeautifulSoup
-from nfl_data_py import import_pbp_data
+from nfl_dastreata_py import import_pbp_data
 # ---------------------- Libraries ----------------------
 
 

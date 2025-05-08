@@ -13,7 +13,6 @@ from load_data import get_season_projections_dst
 # Set the page configuration
 st.set_page_config(page_title="🏈 DraftVader v1.0 🤖")
 
-# ---------------------- Session State ----------------------
 def initialize_session_state():
     defaults = {
         "teams": {f"Team {i+1}": [] for i in range(12)},
@@ -26,6 +25,7 @@ def initialize_session_state():
         if key not in st.session_state:
             st.session_state[key] = value
 
+# ---------------------- Button Callbacks ----------------------
 def next_pick():
     st.session_state.last_pick = None
     st.session_state.last_team = None
@@ -36,7 +36,7 @@ def undo_last_pick():
         st.session_state.teams[st.session_state.last_team].remove(st.session_state.last_pick)
         st.session_state.last_pick = None
         st.session_state.last_team = None
-# ---------------------- Session State ----------------------
+# ---------------------- Button Callbacks ----------------------
 
 
 # ---------------------- SHUTDOWN (Development) ----------------------
@@ -213,13 +213,28 @@ def get_available_players(players_2025):
     )
 
 def get_pick_count():
+    # st.session_state.pick_number is the current pick number in the draft.
+    # len(st.session_state.pick_order) gives the total number of teams.
+    # The // operator performs integer division to calculate the current round number.
     round_number = st.session_state.pick_number // len(st.session_state.pick_order)
+    # Uses the modulus operator % to find the position within the current round.
+    # This effectively determines the index within the list of teams.
     pick_in_round = st.session_state.pick_number % len(st.session_state.pick_order)
 
+    # Checks whether the round number is even or odd.
+    # If even, it returns the team from pick_order at the calculated index.
+    # If odd, it returns the team from the reversed order ([::-1]) at the same index.
+    # This logic ensures that the draft follows a snake format, where the order reverses after each round.
     if round_number % 2 == 0:
         return st.session_state.pick_order[pick_in_round]
     else:
         return st.session_state.pick_order[::-1][pick_in_round]
+
+    # Example: If there are 4 teams (pick_order = [A, B, C, D]):
+    # Round 1 (even): A -> B -> C -> D
+    # Round 2 (odd): D -> C -> B -> A
+    # Round 3 (even): A -> B -> C -> D
+    # And so on...
 
 # Function to get the primary position (e.g., "QB" from "QB1", "RB2", etc.)
 def get_primary_position(position):
@@ -230,15 +245,30 @@ def get_primary_position(position):
 
 
 # ---------------------- Data Handling ----------------------
+# initialize session state variables to ensure they have default values before the user interacts with the app.
 initialize_session_state()
 
+# calls load_adp_data() function and stores the ADP dictionary returned in adp_dict
+# [{'rank': rank, 'name': name, 'pos': pos, 'adp': adp}, ...]
 adp_dict = load_adp_data()
 
+# [{'name': name, 'team': team, 'pass_att': pass_att, 'pass_cmp': pass_cmp, 'pass_yds': pass_yds, 'pass_tds': pass_tds,
+#     'ints': ints, 'rush_att': rush_att, 'rush_yds': rush_yds, 'rush_tds': rush_tds, 'fumbles': fumbles,
+#     'proj_points': proj_points}]
 season_projections_qb = load_season_projections_qb()
+# [{'name': name, 'team': team, 'rush_att': rush_att, 'rush_yds': rush_yds, 'rush_tds': rush_tds, 'rec': rec,
+#     'rec_yds': rec_yds, 'rec_tds': rec_tds, 'fumbles': fumbles, 'proj_points': proj_points}]
 season_projections_rb = load_season_projections_rb()
+# [{'name': name, 'team': team, 'rec': rec, 'rec_yds': rec_yds, 'rec_tds': rec_tds, 'rush_att': rush_att,
+#     'rush_yds': rush_yds, 'rush_tds': rush_tds, 'fumbles': fumbles, 'proj_points': proj_points}]
 season_projections_wr = load_season_projections_wr()
+# [{'name': name, 'team': team, 'rec': rec, 'rec_yds': rec_yds, 'rec_tds': rec_tds, 'fumbles': fumbles,
+#     'proj_points': proj_points}]
 season_projections_te = load_season_projections_te()
+# [{'name': name, 'team': team, 'fg': fg, 'fga': fga, 'xpt': xpt, 'proj_points': proj_points}]
 season_projections_k = load_season_projections_k()
+# [{'team': team, 'sack': sack, 'int': int, 'fr': fr, 'ff': ff, 'td': td, 'safety': safety, 'pa': pa,
+#     'yds_agn': yds_agn, 'proj_points': proj_points}]
 season_projections_dst = load_season_projections_dst()
 
 # seasons = [2022, 2023, 2024]
@@ -251,12 +281,22 @@ season_projections_dst = load_season_projections_dst()
 
 
 # ---------------------- User Interface ----------------------
+# calls styled_header() function to print styled header with arg "🏈 DraftVader v1.0 🤖"
 styled_header("🏈 DraftVader v1.0 🤖")
+
+# uses Streamlit to display a subheader with the text "🗳️ Pick Selection".
 st.subheader("🗳️ Pick Selection")
+
+# applies custom CSS styling to Streamlit selectboxes.
 apply_selectbox_style()
 
+# determines which team is currently making a draft pick in a snake draft format
 pick_count = get_pick_count()
+
+# create a string that represents the name of the team based on the current pick count.
 current_team = f"Team {pick_count}"
+
+# Streamlit statement used to visually indicate which team is currently on the clock in the fantasy football draft.
 st.markdown(f"**🕒 Current Team Picking ➡ {current_team}**")
 
 # Extract the list of available players
