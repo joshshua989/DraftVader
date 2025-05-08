@@ -11,20 +11,11 @@ from load_data import get_season_projections_dst
 # ---------------------- Libraries ----------------------
 
 
-# Set the page configuration
-st.set_page_config(page_title="🏈 DraftVader v1.0 🤖")
-
-def initialize_session_state():
-    defaults = {
-        "teams": {f"Team {i+1}": [] for i in range(12)},
-        "pick_order": list(range(1, 13)),
-        "pick_number": 0,
-        "last_pick": None,
-        "last_team": None,
-    }
-    for key, value in defaults.items():
-        if key not in st.session_state:
-            st.session_state[key] = value
+# Streamlit function call used to configure the page settings
+st.set_page_config(
+    page_title="🏈 DraftVader v1.0 🤖",
+    page_icon="🚀"
+)
 
 
 # ---------------------- Button Callbacks ----------------------
@@ -176,6 +167,26 @@ def load_adp_data():
         print(player)
     print("---------------------------------------------------------------")
     return adp_data
+
+# function to initialize the session state variables
+def initialize_session_state():
+    defaults = {
+        # Creates a dictionary with keys "Team 1" to "Team 12", each mapped to an empty list.
+        # This represents the draft picks for each of the 12 teams.
+        "teams": {f"Team {i+1}": [] for i in range(12)},
+        # A list of integers from 1 to 12, representing the draft pick order.
+        "pick_order": list(range(1, 13)),
+        # An integer representing the current pick number, starting from 0.
+        "pick_number": 0,
+        # Stores the last drafted player, initially set to None.
+        "last_pick": None,
+        # Stores the last team that picked, initially set to None.
+        "last_team": None,
+    }
+    # The for loop iterates over each key-value pair in the defaults dictionary:
+    for key, value in defaults.items():
+        if key not in st.session_state: # Checks if the key is already in st.session_state.
+            st.session_state[key] = value # If not, it sets the key in the session state with the corresponding value.
 # ---------------------- Data Functions ----------------------
 
 
