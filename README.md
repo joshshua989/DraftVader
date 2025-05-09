@@ -1,7 +1,3 @@
-# DraftVader
-
-DraftVader is an AI-powered fantasy football draft assistant that leverages machine learning to make data-driven predictions and recommendations during fantasy drafts.
-
 ## Installation
 
 1. Clone the repository:
@@ -10,7 +6,7 @@ DraftVader is an AI-powered fantasy football draft assistant that leverages mach
 
 # 🏈 Draft Vader v1.0 🤖
 
-Draft Vader is an advanced fantasy football drafting tool designed for Best Ball drafts. It leverages data from FantasyPros and powerful features in Streamlit to help you make informed draft choices, track team compositions, and manage draft progress efficiently.
+DraftVader is an AI-powered fantasy football draft assistant that leverages machine learning to make data-driven predictions and recommendations during fantasy drafts.
 
 ## 🚀 Features
 
