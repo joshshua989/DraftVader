@@ -9,12 +9,16 @@ from load_data import get_season_projections_wr, get_season_projections_te, get_
 from load_data import get_season_projections_dst
 # ---------------------- Libraries ----------------------
 
+
+# ---------------------- Page Configuration ----------------------
 # Streamlit function call used to configure the page settings - sets up the page title and icon for the Streamlit app
 # This function call should be placed at the very beginning of your Streamlit script.
 st.set_page_config(
     page_title="DraftVader v1.0",
     page_icon="🤖"
 )
+# ---------------------- Page Configuration ----------------------
+
 
 # ---------------------- Data Functions ----------------------
 # function to initialize the session state variables
@@ -43,7 +47,7 @@ def load_adp_data():
     # Print to the console (or Streamlit’s log) the start of the data scraping process.
     print("---------------------------------------------------------------")
     print("⏳ Scraping ADP data from 'https://www.fantasypros.com/nfl/adp/best-ball-overall.php' ...")
-    # Calls a function named get_adp_data() to scrape ADP data from FantasyPros.
+    # Calls load_data.py function get_adp_data() to scrape ADP data from FantasyPros.
     # adp_data is a list of dictionaries where each dictionary contains data about a player.
     adp_data = get_adp_data()
     # Check if data is empty or None
@@ -141,11 +145,25 @@ def load_season_projections_dst():
 # ---------------------- Data Functions ----------------------
 
 
+# ---------------------- Button Callbacks ----------------------
+def next_pick():
+    st.session_state.last_pick = None
+    st.session_state.last_team = None
+    st.session_state.pick_number += 1
+
+def undo_last_pick():
+    if st.session_state.last_team and st.session_state.last_pick in st.session_state.teams[st.session_state.last_team]:
+        st.session_state.teams[st.session_state.last_team].remove(st.session_state.last_pick)
+        st.session_state.last_pick = None
+        st.session_state.last_team = None
+# ---------------------- Button Callbacks ----------------------
+
+
 # ---------------------- Style ----------------------
 # customizes the visual appearance of all select boxes in the app by injecting CSS through the st.markdown() function.
 def apply_selectbox_style():
     st.markdown( # Uses st.markdown() to insert raw HTML and CSS.
-                 # i.e. st.markdown("""<style>...</style>""", unsafe_allow_html=True)
+                 # e.g., "st.markdown("""<style>...</style>""", unsafe_allow_html=True)"
         """
         <style>
         .stSelectbox > div[data-baseweb="select"] {
@@ -170,20 +188,6 @@ def styled_header(title: str):
 # ---------------------- Style ----------------------
 
 
-# ---------------------- Button Callbacks ----------------------
-def next_pick():
-    st.session_state.last_pick = None
-    st.session_state.last_team = None
-    st.session_state.pick_number += 1
-
-def undo_last_pick():
-    if st.session_state.last_team and st.session_state.last_pick in st.session_state.teams[st.session_state.last_team]:
-        st.session_state.teams[st.session_state.last_team].remove(st.session_state.last_pick)
-        st.session_state.last_pick = None
-        st.session_state.last_team = None
-# ---------------------- Button Callbacks ----------------------
-
-
 # ---------------------- SHUTDOWN (Development) ----------------------
 def shutdown():
     pid = os.getpid()
@@ -204,12 +208,37 @@ with col2:
 
 
 # ---------------------- Script Functions ----------------------
+# Function to get the primary position (e.g., "QB" from "QB1", "RB2", etc.)
+def get_primary_position(position):
+    # Use regular expression to capture the first part of the position (e.g., "QB", "RB", etc.)
+    match = re.match(r"([A-Za-z]+)", position)
+    return match.group(1) if match else position  # Default to the original position if no match
+
+# Ensures that the draft follows a snake format, where the draft order reverses after each round.
+def get_team_picking():
+    # st.session_state.pick_number is the current pick number in the draft.
+    # len(st.session_state.pick_order) gives the total number of teams.
+    # The // operator performs integer division to calculate the current round number.
+    round_number = st.session_state.pick_number // len(st.session_state.pick_order) # determine round (e.g., "round 1")
+    # Uses the modulus operator % to find the position within the current round.
+    # This effectively determines the index within the list of teams.
+    pick_in_round = st.session_state.pick_number % len(st.session_state.pick_order) # determine the position
+                                                                                    # (e.g., "round 2, pick 4")
+    # Checks whether the round number is even or odd.
+    # If even, it returns the team from pick_order at the calculated index.
+    # If odd, it returns the team from the reversed order ([::-1]) at the same index.
+    # This logic ensures that the draft follows a snake format, where the order reverses after each round.
+    if round_number % 2 == 0:
+        return st.session_state.pick_order[pick_in_round] # Even round: normal order
+    else:
+        return st.session_state.pick_order[::-1][pick_in_round] # Odd round: reversed order
+
 def build_team_roster(team_picks):
     starters = {"QB": [], "RB": [], "WR": [], "TE": [], "FLEX": []}
     bench = []
     detailed_picks = []
     for p_name in team_picks:
-        player_info = next((p for p in adp_dict if p['name'] == p_name), None)
+        player_info = next((p for p in adp_rankings if p['name'] == p_name), None)
         if player_info:
             detailed_picks.append(player_info)
 
@@ -239,36 +268,11 @@ def get_available_players(players_2025):
         key=lambda x: x['adp'], reverse=True
     )
 
-# Ensures that the draft follows a snake format, where the draft order reverses after each round.
-def get_pick_count():
-    # st.session_state.pick_number is the current pick number in the draft.
-    # len(st.session_state.pick_order) gives the total number of teams.
-    # The // operator performs integer division to calculate the current round number.
-    round_number = st.session_state.pick_number // len(st.session_state.pick_order) # determine round (i.e. round 1)
-    # Uses the modulus operator % to find the position within the current round.
-    # This effectively determines the index within the list of teams.
-    pick_in_round = st.session_state.pick_number % len(st.session_state.pick_order) # determine the position
-                                                                                    # (i.e. round 2, pick 4)
-    # Checks whether the round number is even or odd.
-    # If even, it returns the team from pick_order at the calculated index.
-    # If odd, it returns the team from the reversed order ([::-1]) at the same index.
-    # This logic ensures that the draft follows a snake format, where the order reverses after each round.
-    if round_number % 2 == 0:
-        return st.session_state.pick_order[pick_in_round] # Even round: normal order
-    else:
-        return st.session_state.pick_order[::-1][pick_in_round] # Odd round: reversed order
-
     # Example: If there are 4 teams (pick_order = [A, B, C, D]):
     # Round 1 (even): A -> B -> C -> D
     # Round 2 (odd): D -> C -> B -> A
     # Round 3 (even): A -> B -> C -> D
     # And so on...
-
-# Function to get the primary position (e.g., "QB" from "QB1", "RB2", etc.)
-def get_primary_position(position):
-    # Use regular expression to capture the first part of the position (e.g., "QB", "RB", etc.)
-    match = re.match(r"([A-Za-z]+)", position)
-    return match.group(1) if match else position  # Default to the original position if no match
 # ---------------------- Script Functions ----------------------
 
 
@@ -276,9 +280,9 @@ def get_primary_position(position):
 # initialize session state variables to ensure they have default values before the user interacts with the app.
 initialize_session_state()
 
-# calls load_adp_data() function and stores a list of dictionaries in the adp_dict variable
+# calls load_adp_data() function and stores a list of dictionaries in the adp_rankings variable
 # [{'rank': rank, 'name': name, 'pos': pos, 'adp': adp}, ...]
-adp_dict = load_adp_data()
+adp_rankings = load_adp_data()
 
 # [{'name': name, 'team': team, 'pass_att': pass_att, 'pass_cmp': pass_cmp, 'pass_yds': pass_yds, 'pass_tds': pass_tds,
 #     'ints': ints, 'rush_att': rush_att, 'rush_yds': rush_yds, 'rush_tds': rush_tds, 'fumbles': fumbles,
@@ -312,14 +316,14 @@ season_projections_dst = load_season_projections_dst()
 # calls styled_header() function to print styled header with arg "🏈 DraftVader v1.0 🤖"
 styled_header("🤖 DRAFT VADER 1.0 🏈")
 
-st.write("**Welcome to NFL Best Ball Draft 2025! I am you're AI assistant! Please make a pick to begin the draft!**")
+st.write("**Welcome to NFL Best Ball Draft 2025! Please make a pick to begin the draft!**")
 
 # determines which team is currently making a draft pick in a snake draft format
-pick_count = get_pick_count()
+team_picking_int = get_team_picking()
 
 # create a string that represents the name of the team based on the current pick count.
-# (i.e. pick_count = 1, current_team returns "Team 1")
-current_team = f"Team {pick_count}"
+# (e.g., "pick_count = 1, current_team returns: Team 1")
+current_team = f"Team {team_picking_int}"
 
 current_round = (st.session_state.pick_number // len(st.session_state.pick_order))+1
 
@@ -337,44 +341,44 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# uses Streamlit to display a subheader with the text "🗳️ Pick Selection".
+# Uses Streamlit to display a subheader with the text "🗳️ Pick Selection".
 st.subheader("🗳️ Pick Selection")
 
-# ----------------------------------- CONTINUE ---------------------------------------
-
-# Extract the list of available players
+# Creates a list of available players, sorted by their Average Draft Position (ADP).
 available_players_list = [
     {"name": p['name'], "pos": p['pos']}
-    for p in sorted(get_available_players(adp_dict), key=lambda p: p['adp'])
+    # sorted() function orders the list of players based on the 'adp' value in ascending order
+    for p in sorted(get_available_players(adp_rankings), key=lambda p: p['adp'])
 ]
 
-# Format the available players for the selectbox (only name and position)
-formatted_players = [
-    f"{player['name']} ({player['pos']})" for player in available_players_list
-]
-
-# Define the valid positions for the filter
-valid_positions = ["All", "QB", "RB", "WR", "TE", "DST"]
-
-# Filter by position
-primary_positions = sorted(set(p['pos'] for p in available_players_list))
-position_filter_options = ["All"] + [pos for pos in primary_positions if pos in valid_positions]
-
+# Creates two equal-width columns side by side in the Streamlit app.
 col1, col2 = st.columns(2)
 
-# Apply the position filter and selectbox
+# Places the following UI elements inside col1.
 with col1:
+    # Creates a list of formatted player strings from a list of available players.
+    formatted_players = [
+        f"{player['name']} ({player['pos']})" for player in available_players_list # e.g., "Ja'Marr Chase (WR)"
+    ]
+    # Creates a dropdown (select box) inside column 1
     player_choice = st.selectbox(
-        "Select Player",
-        formatted_players,  # Display player name and position (cleaned)
-        index=None,
-        placeholder="--- Select Player ---"
+        "Select Player", # Displayed as the label above the select box.
+        formatted_players,  # A list containing formatted strings representing players (e.g., "Ja'Marr Chase (WR)").
+        index=None, # No pre-selected value (the dropdown will be empty initially).
+        placeholder="--- Select Player ---" # A placeholder text shown before any player is selected.
     )
 
+# Places the following UI elements inside col2.
 with col2:
+    # Creates a list called valid_positions that contains the valid positions available for filtering
+    valid_positions = ["All", "QB", "RB", "WR", "TE", "DST"]
+    # Creates a sorted list of player positions from the available players and combines it with a default "All" option.
+    primary_positions = sorted(set(p['pos'] for p in available_players_list))
+    position_filter_options = ["All"] + [pos for pos in primary_positions if pos in valid_positions]
+    # Creates a dropdown (select box) inside column 2
     position_filter_selection = st.selectbox(
-        "Filter by Position:",
-        position_filter_options  # Filter by cleaned primary positions
+        "Filter by Position:", # Displayed as the label above the select box.
+        position_filter_options  # A list of available position options for filtering.
     )
 
 # Draft Buttons: Next Pick and Undo Last Pick
