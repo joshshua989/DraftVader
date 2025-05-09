@@ -7,7 +7,7 @@ from nfl_data_py import import_pbp_data
 
 
 # ---------------------- ADP Data ----------------------
-def adp_data():
+def load_adp_data():
     # URL of the FantasyPros Best Ball ADP page
     url = 'https://www.fantasypros.com/nfl/adp/best-ball-overall.php'
 
@@ -64,7 +64,7 @@ def adp_data():
 
 
 # ---------------------- QB Season Projections ----------------------
-def season_projections_qb():
+def load_season_projections_qb():
     url = 'https://www.fantasypros.com/nfl/projections/qb.php?week=draft'
 
     # Fetch the page content
@@ -133,7 +133,7 @@ def season_projections_qb():
 
 
 # ---------------------- RB Season Projections ----------------------
-def season_projections_rb():
+def load_season_projections_rb():
     url = 'https://www.fantasypros.com/nfl/projections/rb.php?week=draft&scoring=PPR&week=draft'
 
     # Fetch the page content
@@ -198,7 +198,7 @@ def season_projections_rb():
 
 
 # ---------------------- WR Season Projections ----------------------
-def season_projections_wr():
+def load_season_projections_wr():
     url = 'https://www.fantasypros.com/nfl/projections/wr.php?week=draft&scoring=PPR&week=draft'
 
     # Fetch the page content
@@ -263,7 +263,7 @@ def season_projections_wr():
 
 
 # ---------------------- TE Season Projections ----------------------
-def season_projections_te():
+def load_season_projections_te():
     url = 'https://www.fantasypros.com/nfl/projections/te.php?week=draft&scoring=PPR&week=draft'
 
     # Fetch the page content
@@ -322,7 +322,7 @@ def season_projections_te():
 
 
 # ---------------------- K Season Projections ----------------------
-def season_projections_k():
+def load_season_projections_k():
     url = 'https://www.fantasypros.com/nfl/projections/k.php?week=draft'
 
     # Fetch the page content
@@ -379,7 +379,7 @@ def season_projections_k():
 
 
 # ---------------------- DST Season Projections ----------------------
-def season_projections_dst():
+def load_season_projections_dst():
     url = 'https://www.fantasypros.com/nfl/projections/dst.php?week=draft'
 
     # Fetch the page content
@@ -436,7 +436,7 @@ def season_projections_dst():
 
 
 # ---------------------- Regular Season Totals ----------------------
-def regular_season_totals(years):
+def load_regular_season_totals(years):
     all_totals = {
         'passing': [],
         'rushing': [],

@@ -1,6 +1,5 @@
 # ---------------------- Libraries ----------------------
 import os
-import re
 import streamlit as st
 import psutil
 import signal
@@ -20,7 +19,7 @@ st.set_page_config(
 # ---------------------- Page Configuration ----------------------
 
 
-# ---------------------- Data Functions ----------------------
+# ---------------------- Initialize Session State ----------------------
 # function to initialize the session state variables
 def initialize_session_state():
     defaults = {
@@ -40,123 +39,7 @@ def initialize_session_state():
     for key, value in defaults.items():
         if key not in st.session_state: # Checks if the key is already in st.session_state.
             st.session_state[key] = value # If not, it sets the key in the session state with the corresponding value.
-
-# Loads Average Draft Position (ADP) data from FantasyPros, processes it, and caches the result to improve performance.
-@st.cache_data # Subsequent calls with the same input will return the cached result instead of re-executing the function.
-def load_adp_data():
-    # Print to the console (or Streamlit’s log) the start of the data scraping process.
-    print("---------------------------------------------------------------")
-    print("⏳ Scraping ADP data from 'https://www.fantasypros.com/nfl/adp/best-ball-overall.php' ...")
-    # Calls load_data.py function get_adp_data() to scrape ADP data from FantasyPros.
-    # adp_data is a list of dictionaries where each dictionary contains data about a player.
-    adp_data = get_adp_data()
-    # Check if data is empty or None
-    if not adp_data:
-        raise ValueError("No ADP data returned from the source.")
-    for player in adp_data: # Iterates over the list of player data.
-        # Uses the function get_primary_position() to standardize or clean up the player’s position field.
-        player['pos'] = get_primary_position(player['pos'])
-    # Print a message indicating that the ADP data has been successfully loaded.
-    print("🧠 ADP data loaded!\n")
-    print("Data summary:")
-    # Displays a preview of the first 5 player records.
-    for player in adp_data[:5]:
-        print(player)
-    print("---------------------------------------------------------------")
-    return adp_data
-
-@st.cache_data
-def load_season_projections_qb():
-    print("⏳ Scraping QB Season Projections from 'https://www.fantasypros.com/nfl/projections/qb.php?week=draft' ...")
-    projections_qb = get_season_projections_qb()
-    print("🧠 QB Season Projections loaded!\n")
-    print("Data summary:")
-    for qb in projections_qb[:5]:
-        print(qb)
-    print("---------------------------------------------------------------")
-    return projections_qb
-
-@st.cache_data
-def load_season_projections_rb():
-    print("⏳ Scraping RB Season Projections from 'https://www.fantasypros.com/nfl/projections/rb.php?week=draft&scoring=PPR&week=draft' ...")
-    projections_rb = get_season_projections_rb()
-    print("🧠 RB Season Projections loaded!\n")
-    print("Data summary:")
-    for rb in projections_rb[:5]:
-        print(rb)
-    print("---------------------------------------------------------------")
-    return projections_rb
-
-@st.cache_data
-def load_season_projections_wr():
-    print("⏳ Scraping WR Season Projections from 'https://www.fantasypros.com/nfl/projections/wr.php?week=draft&scoring=PPR&week=draft' ...")
-    projections_wr = get_season_projections_wr()
-    print("🧠 WR Season Projections loaded!\n")
-    print("Data summary:")
-    for wr in projections_wr[:5]:
-        print(wr)
-    print("---------------------------------------------------------------")
-    return projections_wr
-
-@st.cache_data
-def load_season_projections_te():
-    print("⏳ Scraping TE Season Projections from 'https://www.fantasypros.com/nfl/projections/te.php?week=draft&scoring=PPR&week=draft' ...")
-    projections_te = get_season_projections_te()
-    print("🧠 TE Season Projections loaded!\n")
-    print("Data summary:")
-    for te in projections_te[:5]:
-        print(te)
-    print("---------------------------------------------------------------")
-    return projections_te
-
-@st.cache_data
-def load_season_projections_k():
-    print("⏳ Scraping Kicker Season Projections from 'https://www.fantasypros.com/nfl/projections/k.php?week=draft' ...")
-    projections_k = get_season_projections_k()
-    print("🧠 Kicker Season Projections loaded!\n")
-    print("Data summary:")
-    for k in projections_k[:5]:
-        print(k)
-    print("---------------------------------------------------------------")
-    return projections_k
-
-@st.cache_data
-def load_season_projections_dst():
-    print("⏳ Scraping DST Season Projections from 'https://www.fantasypros.com/nfl/projections/dst.php?week=draft' ...")
-    projections_dst = get_season_projections_dst()
-    print("🧠 DST Season Projections loaded!\n")
-    print("Data summary:")
-    for dst in projections_dst[:5]:
-        print(dst)
-    print("---------------------------------------------------------------")
-    return projections_dst
-
-# @st.cache_data # A Streamlit decorator that tells Streamlit to cache the output of the function.
-# # The first time get_player_stats() runs, it fetches and stores the data.
-# # On future runs, if the input hasn’t changed, Streamlit will return the cached result — instead of re-running the function.
-# def load_player_stats(stat_str: str, seasons):
-#     match stat_str:
-#         case "totals":
-#             return get_regular_season_totals(seasons)
-#         case _:
-#             print(f"Load Failure! Could not recognize stat code: {stat_str}")
-#             st.markdown(f"Load Failure! Could not recognize stat code: {stat_str}")
-#             return
-# ---------------------- Data Functions ----------------------
-
-
-# ---------------------- Button Callbacks ----------------------
-def next_pick():
-    st.session_state.last_pick = None
-    st.session_state.last_team = None
-    st.session_state.pick_number += 1
-
-def undo_last_pick():
-    if st.session_state.last_team and st.session_state.last_pick in st.session_state.teams[st.session_state.last_team]:
-        st.session_state.teams[st.session_state.last_team].remove(st.session_state.last_pick)
-        st.session_state.last_pick = None
-        st.session_state.last_team = None
-# ---------------------- Button Callbacks ----------------------
+# ---------------------- Initialize Session State ----------------------
 
 
 # ---------------------- Style ----------------------
@@ -188,6 +71,20 @@ def styled_header(title: str):
 # ---------------------- Style ----------------------
 
 
+# ---------------------- Button Callbacks ----------------------
+def next_pick():
+    st.session_state.last_pick = None
+    st.session_state.last_team = None
+    st.session_state.pick_number += 1
+
+def undo_last_pick():
+    if st.session_state.last_team and st.session_state.last_pick in st.session_state.teams[st.session_state.last_team]:
+        st.session_state.teams[st.session_state.last_team].remove(st.session_state.last_pick)
+        st.session_state.last_pick = None
+        st.session_state.last_team = None
+# ---------------------- Button Callbacks ----------------------
+
+
 # ---------------------- SHUTDOWN (Development) ----------------------
 def shutdown():
     pid = os.getpid()
@@ -208,12 +105,6 @@ with col2:
 
 
 # ---------------------- Script Functions ----------------------
-# Function to get the primary position (e.g., "QB" from "QB1", "RB2", etc.)
-def get_primary_position(position):
-    # Use regular expression to capture the first part of the position (e.g., "QB", "RB", etc.)
-    match = re.match(r"([A-Za-z]+)", position)
-    return match.group(1) if match else position  # Default to the original position if no match
-
 # Ensures that the draft follows a snake format, where the draft order reverses after each round.
 def get_team_picking():
     # st.session_state.pick_number is the current pick number in the draft.
@@ -282,29 +173,29 @@ initialize_session_state()
 
 # calls load_adp_data() function and stores a list of dictionaries in the adp_rankings variable
 # [{'rank': rank, 'name': name, 'pos': pos, 'adp': adp}, ...]
-adp_rankings = load_adp_data()
+adp_rankings = get_adp_data()
 
 # [{'name': name, 'team': team, 'pass_att': pass_att, 'pass_cmp': pass_cmp, 'pass_yds': pass_yds, 'pass_tds': pass_tds,
 #     'ints': ints, 'rush_att': rush_att, 'rush_yds': rush_yds, 'rush_tds': rush_tds, 'fumbles': fumbles,
 #     'proj_points': proj_points}]
-season_projections_qb = load_season_projections_qb()
+season_projections_qb = get_season_projections_qb()
 # [{'name': name, 'team': team, 'rush_att': rush_att, 'rush_yds': rush_yds, 'rush_tds': rush_tds, 'rec': rec,
 #     'rec_yds': rec_yds, 'rec_tds': rec_tds, 'fumbles': fumbles, 'proj_points': proj_points}]
-season_projections_rb = load_season_projections_rb()
+season_projections_rb = get_season_projections_rb()
 # [{'name': name, 'team': team, 'rec': rec, 'rec_yds': rec_yds, 'rec_tds': rec_tds, 'rush_att': rush_att,
 #     'rush_yds': rush_yds, 'rush_tds': rush_tds, 'fumbles': fumbles, 'proj_points': proj_points}]
-season_projections_wr = load_season_projections_wr()
+season_projections_wr = get_season_projections_wr()
 # [{'name': name, 'team': team, 'rec': rec, 'rec_yds': rec_yds, 'rec_tds': rec_tds, 'fumbles': fumbles,
 #     'proj_points': proj_points}]
-season_projections_te = load_season_projections_te()
+season_projections_te = get_season_projections_te()
 # [{'name': name, 'team': team, 'fg': fg, 'fga': fga, 'xpt': xpt, 'proj_points': proj_points}]
-season_projections_k = load_season_projections_k()
+season_projections_k = get_season_projections_k()
 # [{'team': team, 'sack': sack, 'int': int, 'fr': fr, 'ff': ff, 'td': td, 'safety': safety, 'pa': pa,
 #     'yds_agn': yds_agn, 'proj_points': proj_points}]
-season_projections_dst = load_season_projections_dst()
+season_projections_dst = get_season_projections_dst()
 
 # seasons = [2022, 2023, 2024]
-# regular_season_totals = load_player_stats("totals", seasons)
+# regular_season_totals = get_player_stats("totals", seasons)
 # for stat_type, df in regular_season_totals.items():
 #      filename = f"{stat_type.upper()}_STATS.csv"
 #      df.to_csv(filename, index=False)
