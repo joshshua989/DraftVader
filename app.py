@@ -182,7 +182,7 @@ def apply_selectbox_style():
 # function that creates a custom-styled header
 def styled_header(title: str):
     st.markdown(
-        f"<h1 style='text-align: center; font-size: 48px; color: #0076B6;'>{title}</h1>",
+        f"<h1 style='text-align: center; font-size: 48px; color: #00ab41;'>{title}</h1>",
         unsafe_allow_html=True
     )
 # ---------------------- Style ----------------------
@@ -314,9 +314,11 @@ season_projections_dst = load_season_projections_dst()
 
 # ---------------------- User Interface ----------------------
 # calls styled_header() function to print styled header with arg "🏈 DraftVader v1.0 🤖"
-styled_header("🤖 DRAFT VADER 1.0 🏈")
+styled_header("🏈 DRAFT VADER 1.0") # 🗣
 
-st.write("**Welcome to NFL Best Ball Draft 2025! Please make a pick to begin the draft!**")
+st.write("")
+st.markdown("<p style='color: lightblue;'>🤖 <strong>Welcome to NFL Best Ball Draft 2025!</strong></p>", unsafe_allow_html=True)
+st.markdown("<p style='color: lightblue;'>🤖 <strong>I will be your personal AI assistant for the draft!</strong></p>", unsafe_allow_html=True)
 
 # determines which team is currently making a draft pick in a snake draft format
 team_picking_int = get_team_picking()
@@ -333,16 +335,18 @@ with st.sidebar:
     st.write(f"**Last Pick:** {st.session_state.last_pick}")
     st.write(f"**Last Team:** {st.session_state.last_team}")
 
-st.subheader("🛠️ Draft Progress")
-st.write("Teams: 12 | Format: Snake, full-PPR")
-st.write(f"Round: {current_round}")
+st.markdown("<h3 style='color: #0098f5;'>👉 Let's Begin!</h3>", unsafe_allow_html=True) # 🛠
+st.write("- Teams: 12 | Format: Snake, full-PPR")
+st.write(f"- Round: {current_round}")
 st.markdown(
     f"<h3 style='font-size:18px;'> 🕒 On the Clock: {current_team} | Pick Number: {st.session_state.pick_number+1}</h3>",
     unsafe_allow_html=True
 )
 
-# Uses Streamlit to display a subheader with the text "🗳️ Pick Selection".
-st.subheader("🗳️ Pick Selection")
+# Uses Streamlit to display a subheader with the text "🚩️ Pick Selection".
+st.markdown("<h3 style='color: #0098f5;'>🚩 Pick Selection</h3>", unsafe_allow_html=True) # 🗳
+
+st.markdown("<p style='color: lightblue;'>🤖 <strong>Please make the first pick!</strong></p>", unsafe_allow_html=True)
 
 # Creates a list of available players, sorted by their Average Draft Position (ADP).
 available_players_list = [
@@ -354,32 +358,42 @@ available_players_list = [
 # Creates two equal-width columns side by side in the Streamlit app.
 col1, col2 = st.columns(2)
 
-# Places the following UI elements inside col1.
-with col1:
-    # Creates a list of formatted player strings from a list of available players.
-    formatted_players = [
-        f"{player['name']} ({player['pos']})" for player in available_players_list # e.g., "Ja'Marr Chase (WR)"
-    ]
-    # Creates a dropdown (select box) inside column 1
-    player_choice = st.selectbox(
-        "Select Player", # Displayed as the label above the select box.
-        formatted_players,  # A list containing formatted strings representing players (e.g., "Ja'Marr Chase (WR)").
-        index=None, # No pre-selected value (the dropdown will be empty initially).
-        placeholder="--- Select Player ---" # A placeholder text shown before any player is selected.
-    )
+# Creates a list of formatted player strings from a list of available players.
+formatted_players = [
+    f"{player['name']} ({player['pos']})" for player in available_players_list  # e.g., "Ja'Marr Chase (WR)"
+]
 
 # Places the following UI elements inside col2.
 with col2:
     # Creates a list called valid_positions that contains the valid positions available for filtering
-    valid_positions = ["All", "QB", "RB", "WR", "TE", "DST"]
+    valid_positions = ["All", "QB", "RB", "WR", "TE", "K", "DST"]
     # Creates a sorted list of player positions from the available players and combines it with a default "All" option.
     primary_positions = sorted(set(p['pos'] for p in available_players_list))
     position_filter_options = ["All"] + [pos for pos in primary_positions if pos in valid_positions]
     # Creates a dropdown (select box) inside column 2
     position_filter_selection = st.selectbox(
-        "Filter by Position:", # Displayed as the label above the select box.
+        "Filter by Position:",  # Displayed as the label above the select box.
         position_filter_options  # A list of available position options for filtering.
     )
+
+# Dynamically filter formatted_players based on the selected position
+if position_filter_selection != "All":
+    filtered_players = [
+        f"{p['name']} ({p['pos']})" for p in available_players_list if p['pos'] == position_filter_selection
+    ]
+else:
+    filtered_players = formatted_players  # Show all players if "All" is selected
+
+# Player selection dropdown in the first column with filtered players
+with col1:
+    player_choice = st.selectbox(
+        "Select Player",
+        filtered_players,  # Use filtered players list
+        index=None,
+        placeholder="--- Select Player ---"
+    )
+
+# ------------------------------------- CONTINUE -------------------------------------------
 
 # Draft Buttons: Next Pick and Undo Last Pick
 if st.session_state.last_pick:
@@ -437,14 +451,14 @@ for i in range(0, len(teams), 4):
                 for i in range(required_count):
                     if i < len(current_players):
                         player = current_players[i]
-                        st.markdown(f"{slot}: <span style='color: #FFFF00; font-weight: bold;'>{player['name']}</span>",
+                        st.markdown(f"{slot}: <span style='color: #00ab41; font-weight: bold;'>{player['name']}</span>",
                                     unsafe_allow_html=True)
                     else:
                         st.write(f"{slot}: _Empty_")
             st.markdown("**Bench:**")
             if bench:
                 for p in bench:
-                    st.markdown(f"{slot}: <span style='color: #FFFF00; font-weight: bold;'>{player['name']}</span>",
+                    st.markdown(f"{slot}: <span style='color: #00ab41; font-weight: bold;'>{player['name']}</span>",
                                     unsafe_allow_html=True)
             else:
                 st.write("_No bench players yet._")
