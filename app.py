@@ -1,7 +1,6 @@
 # ---------------------- Libraries ----------------------
 import os
 import re
-
 import streamlit as st
 import psutil
 import signal
@@ -10,10 +9,11 @@ from load_data import get_season_projections_wr, get_season_projections_te, get_
 from load_data import get_season_projections_dst
 # ---------------------- Libraries ----------------------
 
-# Streamlit function call used to configure the page settings
+# Streamlit function call used to configure the page settings - sets up the page title and icon for the Streamlit app
+# This function call should be placed at the very beginning of your Streamlit script.
 st.set_page_config(
-    page_title="🏈 DraftVader v1.0 🤖",
-    page_icon="🚀"
+    page_title="DraftVader v1.0",
+    page_icon="🤖"
 )
 
 # ---------------------- Data Functions ----------------------
@@ -37,15 +37,25 @@ def initialize_session_state():
         if key not in st.session_state: # Checks if the key is already in st.session_state.
             st.session_state[key] = value # If not, it sets the key in the session state with the corresponding value.
 
-@st.cache_data
+# Loads Average Draft Position (ADP) data from FantasyPros, processes it, and caches the result to improve performance.
+@st.cache_data # Subsequent calls with the same input will return the cached result instead of re-executing the function.
 def load_adp_data():
+    # Print to the console (or Streamlit’s log) the start of the data scraping process.
     print("---------------------------------------------------------------")
     print("⏳ Scraping ADP data from 'https://www.fantasypros.com/nfl/adp/best-ball-overall.php' ...")
+    # Calls a function named get_adp_data() to scrape ADP data from FantasyPros.
+    # adp_data is a list of dictionaries where each dictionary contains data about a player.
     adp_data = get_adp_data()
-    for player in adp_data:
+    # Check if data is empty or None
+    if not adp_data:
+        raise ValueError("No ADP data returned from the source.")
+    for player in adp_data: # Iterates over the list of player data.
+        # Uses the function get_primary_position() to standardize or clean up the player’s position field.
         player['pos'] = get_primary_position(player['pos'])
+    # Print a message indicating that the ADP data has been successfully loaded.
     print("🧠 ADP data loaded!\n")
     print("Data summary:")
+    # Displays a preview of the first 5 player records.
     for player in adp_data[:5]:
         print(player)
     print("---------------------------------------------------------------")
@@ -117,21 +127,25 @@ def load_season_projections_dst():
     print("---------------------------------------------------------------")
     return projections_dst
 
-@st.cache_data
-def load_player_stats(stat_str: str, seasons):
-    match stat_str:
-        case "totals":
-            return get_regular_season_totals(seasons)
-        case _:
-            print(f"Load Failure! Could not recognize stat code: {stat_str}")
-            st.markdown(f"Load Failure! Could not recognize stat code: {stat_str}")
-            return
+# @st.cache_data # A Streamlit decorator that tells Streamlit to cache the output of the function.
+# # The first time get_player_stats() runs, it fetches and stores the data.
+# # On future runs, if the input hasn’t changed, Streamlit will return the cached result — instead of re-running the function.
+# def load_player_stats(stat_str: str, seasons):
+#     match stat_str:
+#         case "totals":
+#             return get_regular_season_totals(seasons)
+#         case _:
+#             print(f"Load Failure! Could not recognize stat code: {stat_str}")
+#             st.markdown(f"Load Failure! Could not recognize stat code: {stat_str}")
+#             return
 # ---------------------- Data Functions ----------------------
 
 
 # ---------------------- Style ----------------------
+# customizes the visual appearance of all select boxes in the app by injecting CSS through the st.markdown() function.
 def apply_selectbox_style():
-    st.markdown(
+    st.markdown( # Uses st.markdown() to insert raw HTML and CSS.
+                 # i.e. st.markdown("""<style>...</style>""", unsafe_allow_html=True)
         """
         <style>
         .stSelectbox > div[data-baseweb="select"] {
@@ -144,9 +158,10 @@ def apply_selectbox_style():
         }
         </style>
         """,
-        unsafe_allow_html=True
+        unsafe_allow_html=True # enable HTML rendering, which is disabled by default for security reasons.
     )
 
+# function that creates a custom-styled header
 def styled_header(title: str):
     st.markdown(
         f"<h1 style='text-align: center; font-size: 48px; color: #0076B6;'>{title}</h1>",
@@ -216,6 +231,7 @@ def build_team_roster(team_picks):
             bench.append(player)
     return starters, bench
 
+# creates and returns a list of players who have not been drafted yet, sorted by their ADP from high to low
 def get_available_players(players_2025):
     taken = [p for picks in st.session_state.teams.values() for p in picks]
     return sorted(
@@ -223,23 +239,24 @@ def get_available_players(players_2025):
         key=lambda x: x['adp'], reverse=True
     )
 
+# Ensures that the draft follows a snake format, where the draft order reverses after each round.
 def get_pick_count():
     # st.session_state.pick_number is the current pick number in the draft.
     # len(st.session_state.pick_order) gives the total number of teams.
     # The // operator performs integer division to calculate the current round number.
-    round_number = st.session_state.pick_number // len(st.session_state.pick_order)
+    round_number = st.session_state.pick_number // len(st.session_state.pick_order) # determine round (i.e. round 1)
     # Uses the modulus operator % to find the position within the current round.
     # This effectively determines the index within the list of teams.
-    pick_in_round = st.session_state.pick_number % len(st.session_state.pick_order)
-
+    pick_in_round = st.session_state.pick_number % len(st.session_state.pick_order) # determine the position
+                                                                                    # (i.e. round 2, pick 4)
     # Checks whether the round number is even or odd.
     # If even, it returns the team from pick_order at the calculated index.
     # If odd, it returns the team from the reversed order ([::-1]) at the same index.
     # This logic ensures that the draft follows a snake format, where the order reverses after each round.
     if round_number % 2 == 0:
-        return st.session_state.pick_order[pick_in_round]
+        return st.session_state.pick_order[pick_in_round] # Even round: normal order
     else:
-        return st.session_state.pick_order[::-1][pick_in_round]
+        return st.session_state.pick_order[::-1][pick_in_round] # Odd round: reversed order
 
     # Example: If there are 4 teams (pick_order = [A, B, C, D]):
     # Round 1 (even): A -> B -> C -> D
@@ -259,7 +276,7 @@ def get_primary_position(position):
 # initialize session state variables to ensure they have default values before the user interacts with the app.
 initialize_session_state()
 
-# calls load_adp_data() function and stores the ADP dictionary returned in adp_dict
+# calls load_adp_data() function and stores a list of dictionaries in the adp_dict variable
 # [{'rank': rank, 'name': name, 'pos': pos, 'adp': adp}, ...]
 adp_dict = load_adp_data()
 
@@ -293,22 +310,37 @@ season_projections_dst = load_season_projections_dst()
 
 # ---------------------- User Interface ----------------------
 # calls styled_header() function to print styled header with arg "🏈 DraftVader v1.0 🤖"
-styled_header("🏈 DraftVader v1.0 🤖")
+styled_header("🤖 DRAFT VADER 1.0 🏈")
 
-# uses Streamlit to display a subheader with the text "🗳️ Pick Selection".
-st.subheader("🗳️ Pick Selection")
-
-# applies custom CSS styling to Streamlit selectboxes.
-apply_selectbox_style()
+st.write("**Welcome to NFL Best Ball Draft 2025! I am you're AI assistant! Please make a pick to begin the draft!**")
 
 # determines which team is currently making a draft pick in a snake draft format
 pick_count = get_pick_count()
 
 # create a string that represents the name of the team based on the current pick count.
+# (i.e. pick_count = 1, current_team returns "Team 1")
 current_team = f"Team {pick_count}"
 
-# Streamlit statement used to visually indicate which team is currently on the clock in the fantasy football draft.
-st.markdown(f"**🕒 Current Team Picking ➡ {current_team}**")
+current_round = (st.session_state.pick_number // len(st.session_state.pick_order))+1
+
+with st.sidebar:
+    st.write("**Team Rosters:**")
+    st.write(st.session_state.teams)
+    st.write(f"**Last Pick:** {st.session_state.last_pick}")
+    st.write(f"**Last Team:** {st.session_state.last_team}")
+
+st.subheader("🛠️ Draft Progress")
+st.write("Teams: 12 | Format: Snake, full-PPR")
+st.write(f"Round: {current_round}")
+st.markdown(
+    f"<h3 style='font-size:18px;'> 🕒 On the Clock: {current_team} | Pick Number: {st.session_state.pick_number+1}</h3>",
+    unsafe_allow_html=True
+)
+
+# uses Streamlit to display a subheader with the text "🗳️ Pick Selection".
+st.subheader("🗳️ Pick Selection")
+
+# ----------------------------------- CONTINUE ---------------------------------------
 
 # Extract the list of available players
 available_players_list = [
@@ -401,14 +433,14 @@ for i in range(0, len(teams), 4):
                 for i in range(required_count):
                     if i < len(current_players):
                         player = current_players[i]
-                        st.markdown(f"{slot}: <span style='color: #FFA500; font-weight: bold;'>{player['name']}</span>",
+                        st.markdown(f"{slot}: <span style='color: #FFFF00; font-weight: bold;'>{player['name']}</span>",
                                     unsafe_allow_html=True)
                     else:
                         st.write(f"{slot}: _Empty_")
             st.markdown("**Bench:**")
             if bench:
                 for p in bench:
-                    st.markdown(f"{slot}: <span style='color: #FFA500; font-weight: bold;'>{player['name']}</span>",
+                    st.markdown(f"{slot}: <span style='color: #FFFF00; font-weight: bold;'>{player['name']}</span>",
                                     unsafe_allow_html=True)
             else:
                 st.write("_No bench players yet._")
