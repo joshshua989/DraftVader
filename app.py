@@ -209,16 +209,16 @@ season_projections_dst = get_season_projections_dst()
 
 # ---------------------- Data Manipulation ----------------------
 # Filter the list to include only QBs
-adp_df_qb = [player for player in adp_rankings if player.get("pos") == "QB"]
-adp_df_rb = [player for player in adp_rankings if player.get("pos") == "RB"]
-adp_df_wr = [player for player in adp_rankings if player.get("pos") == "WR"]
-adp_df_te = [player for player in adp_rankings if player.get("pos") == "TE"]
+adp_data_qb = [player for player in adp_rankings if player.get("pos") == "QB"]
+adp_data_rb = [player for player in adp_rankings if player.get("pos") == "RB"]
+adp_data_wr = [player for player in adp_rankings if player.get("pos") == "WR"]
+adp_data_te = [player for player in adp_rankings if player.get("pos") == "TE"]
 
 print("\n////////// VALUE VS. ADP //////////\n")
-implied_points_df_qb = data_manipulation.calculate_adp_implied_points("QB", adp_df_qb, season_projections_qb)
-implied_points_df_rb = data_manipulation.calculate_adp_implied_points("RB", adp_df_rb, season_projections_rb)
-implied_points_df_wr = data_manipulation.calculate_adp_implied_points("WR", adp_df_wr, season_projections_wr)
-implied_points_df_te = data_manipulation.calculate_adp_implied_points("TE", adp_df_te, season_projections_te)
+implied_points_df_qb = data_manipulation.calculate_value_vs_adp("QB", adp_data_qb, season_projections_qb)
+implied_points_df_rb = data_manipulation.calculate_value_vs_adp("RB", adp_data_rb, season_projections_rb)
+implied_points_df_wr = data_manipulation.calculate_value_vs_adp("WR", adp_data_wr, season_projections_wr)
+implied_points_df_te = data_manipulation.calculate_value_vs_adp("TE", adp_data_te, season_projections_te)
 
 
 # ---------------------- Data Manipulation ----------------------

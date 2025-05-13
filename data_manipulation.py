@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 # ---------------------- Data Manipulation Functions ----------------------
 @st.cache_data
-def calculate_adp_implied_points(position, adp, projected_fpts):
+def calculate_value_vs_adp(position, adp, projected_fpts):
     """
     Calculate ADP implied points based on historical data using linear regression.
 
