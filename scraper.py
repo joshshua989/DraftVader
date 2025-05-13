@@ -406,7 +406,7 @@ def load_season_projections_dst():
             proj_points = cols[9].text.strip()
 
             teams.append({
-                'team': team,
+                'name': team,
                 'sack': sack,
                 'int': int,
                 'fr': fr,
@@ -426,7 +426,7 @@ def load_season_projections_dst():
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
     # Drop rows with missing essential values
-    df = df.dropna(subset=['team', 'proj_points'])
+    df = df.dropna(subset=['name', 'proj_points'])
 
     # Sort by fantasy points descending
     df = df.sort_values(by='proj_points', ascending=False)

@@ -3,9 +3,11 @@ import os
 import streamlit as st
 import psutil
 import signal
+
 from load_data import get_regular_season_totals, get_adp_data, get_season_projections_qb, get_season_projections_rb
 from load_data import get_season_projections_wr, get_season_projections_te, get_season_projections_k
 from load_data import get_season_projections_dst
+import data_manipulation
 # ---------------------- Libraries ----------------------
 
 
@@ -171,6 +173,7 @@ def get_available_players(players_2025):
 # initialize session state variables to ensure they have default values before the user interacts with the app.
 initialize_session_state()
 
+print("\n////////// DATA SCRAPING //////////\n")
 # calls load_adp_data() function and stores a list of dictionaries in the adp_rankings variable
 # [{'rank': rank, 'name': name, 'pos': pos, 'adp': adp}, ...]
 adp_rankings = get_adp_data()
@@ -194,6 +197,7 @@ season_projections_k = get_season_projections_k()
 #     'yds_agn': yds_agn, 'proj_points': proj_points}]
 season_projections_dst = get_season_projections_dst()
 
+
 # seasons = [2022, 2023, 2024]
 # regular_season_totals = get_player_stats("totals", seasons)
 # for stat_type, df in regular_season_totals.items():
@@ -201,6 +205,23 @@ season_projections_dst = get_season_projections_dst()
 #      df.to_csv(filename, index=False)
 #      st.write(f"Exported {filename}")
 # ---------------------- Data Handling - BEGIN ----------------------
+
+
+# ---------------------- Data Manipulation ----------------------
+# Filter the list to include only QBs
+adp_df_qb = [player for player in adp_rankings if player.get("pos") == "QB"]
+adp_df_rb = [player for player in adp_rankings if player.get("pos") == "RB"]
+adp_df_wr = [player for player in adp_rankings if player.get("pos") == "WR"]
+adp_df_te = [player for player in adp_rankings if player.get("pos") == "TE"]
+
+print("\n////////// VALUE VS. ADP //////////\n")
+implied_points_df_qb = data_manipulation.calculate_adp_implied_points("QB", adp_df_qb, season_projections_qb)
+implied_points_df_rb = data_manipulation.calculate_adp_implied_points("RB", adp_df_rb, season_projections_rb)
+implied_points_df_wr = data_manipulation.calculate_adp_implied_points("WR", adp_df_wr, season_projections_wr)
+implied_points_df_te = data_manipulation.calculate_adp_implied_points("TE", adp_df_te, season_projections_te)
+
+
+# ---------------------- Data Manipulation ----------------------
 
 
 # ---------------------- User Interface ----------------------

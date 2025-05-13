@@ -7,7 +7,7 @@ from scraper import load_season_projections_dst
 # ---------------------- Libraries ----------------------
 
 
-# ---------------------- Data Functions ----------------------
+# ---------------------- Data Handling Functions ----------------------
 # Loads Average Draft Position (ADP) data from FantasyPros, processes it, and caches the result to improve performance.
 @st.cache_data # Subsequent calls with the same input will return the cached result instead of re-executing the function.
 def get_adp_data():
@@ -102,4 +102,4 @@ def get_season_projections_dst():
 
 def get_regular_season_totals(seasons): # Fetch regular season stats for the requested timeframe
     return load_regular_season_totals(seasons)
-# ---------------------- Data Functions ----------------------
+# ---------------------- Data Handling Functions ----------------------
