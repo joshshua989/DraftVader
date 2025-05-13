@@ -4,9 +4,10 @@ import streamlit as st
 import psutil
 import signal
 
-from load_data import get_regular_season_totals, get_adp_data, get_season_projections_qb, get_season_projections_rb
-from load_data import get_season_projections_wr, get_season_projections_te, get_season_projections_k
-from load_data import get_season_projections_dst
+from load_data import get_adp_data, get_season_projections_qb, get_season_projections_rb, get_season_projections_wr
+from load_data import get_season_projections_te, get_season_projections_k, get_season_projections_dst
+from load_data import get_regular_season_totals
+
 import data_manipulation
 # ---------------------- Libraries ----------------------
 
@@ -198,12 +199,19 @@ season_projections_k = get_season_projections_k()
 season_projections_dst = get_season_projections_dst()
 
 
-# seasons = [2022, 2023, 2024]
-# regular_season_totals = get_player_stats("totals", seasons)
-# for stat_type, df in regular_season_totals.items():
-#      filename = f"{stat_type.upper()}_STATS.csv"
-#      df.to_csv(filename, index=False)
-#      st.write(f"Exported {filename}")
+seasons = [2024]
+regular_season_passing_totals_df = get_regular_season_totals(seasons, "PASSING")
+for stat_type, df in regular_season_passing_totals_df.items():
+     filename = f"{seasons}_REGULAR_SEASON_PASSING_TOTALS.csv"
+     st.write(f"Exported {filename}")
+regular_season_rushing_totals_df = get_regular_season_totals(seasons, "RUSHING")
+for stat_type, df in regular_season_rushing_totals_df.items():
+     filename = f"{seasons}_REGULAR_SEASON_RUSHING_TOTALS.csv"
+     st.write(f"Exported {filename}")
+regular_season_receiving_totals_df = get_regular_season_totals(seasons, "RECEIVING")
+for stat_type, df in regular_season_receiving_totals_df.items():
+     filename = f"{seasons}_REGULAR_SEASON_RECEIVING_TOTALS.csv"
+     st.write(f"Exported {filename}")
 # ---------------------- Data Handling - BEGIN ----------------------
 
 
@@ -247,7 +255,7 @@ with st.sidebar:
     st.write(f"**Last Pick:** {st.session_state.last_pick}")
     st.write(f"**Last Team:** {st.session_state.last_team}")
 
-st.markdown("<h3 style='color: #0098f5;'>👉 Let's Begin!</h3>", unsafe_allow_html=True) # 🛠
+st.markdown("<h3 style='color: #0098f5;'>🚩 Let's Begin!</h3>", unsafe_allow_html=True) # 🛠
 st.write("- Teams: 12 | Format: Snake, full-PPR")
 st.write(f"- Round: {current_round}")
 st.markdown(
@@ -256,7 +264,7 @@ st.markdown(
 )
 
 # Uses Streamlit to display a subheader with the text "🚩️ Pick Selection".
-st.markdown("<h3 style='color: #0098f5;'>🚩 Pick Selection</h3>", unsafe_allow_html=True) # 🗳
+st.markdown("<h3 style='color: #0098f5;'>✅ Pick Selection</h3>", unsafe_allow_html=True) # 🗳
 
 st.markdown("<p style='color: lightblue;'>🤖 <strong>Please make the first pick!</strong></p>", unsafe_allow_html=True)
 

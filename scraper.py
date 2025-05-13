@@ -436,7 +436,7 @@ def load_season_projections_dst():
 
 
 # ---------------------- Regular Season Totals ----------------------
-def load_regular_season_totals(years):
+def load_regular_season_passing_totals(years):
     all_totals = {
         'passing': [],
         'rushing': [],
@@ -444,7 +444,7 @@ def load_regular_season_totals(years):
     }
 
     for year in years:
-        print(f"\n📊 Loading NFL play-by-play data for {year}...")
+        print(f"\n📊 Loading NFL regular season play-by-play data for {year}...")
         pbp = import_pbp_data([year])
         pbp = pbp[pbp['season_type'] == 'REG']
 
@@ -485,9 +485,9 @@ def load_regular_season_totals(years):
         all_totals['receiving'].append(receiving_totals)
 
         # Save to CSV
-        passing_totals.to_csv(f'passing_totals_{year}.csv', index=False)
-        rushing_totals.to_csv(f'rushing_totals_{year}.csv', index=False)
-        receiving_totals.to_csv(f'receiving_totals_{year}.csv', index=False)
+        passing_totals.to_csv(f'{year}_REGULAR_SEASON_PASSING_TOTALS.csv', index=False)
+        rushing_totals.to_csv(f'{year}_REGULAR_SEASON_RUSHING_TOTALS.csv', index=False)
+        receiving_totals.to_csv(f'{year}_REGULAR_SEASON_RECEIVING_TOTALS.csv', index=False)
 
     print("\n🏆 All requested season data loaded into 'all_totals' dictionary!\n")
 
