@@ -1,5 +1,6 @@
 # ---------------------- Libraries ----------------------
 import requests
+import streamlit as st
 import pandas as pd
 from bs4 import BeautifulSoup
 from nfl_data_py import import_pbp_data
@@ -433,68 +434,3 @@ def load_season_projections_dst():
 
     return df.to_dict(orient='records')
 # ---------------------- DST Season Projections ----------------------
-
-
-# ---------------------- Regular Season Totals ----------------------
-def load_regular_season_passing_totals(years):
-    all_totals = {
-        'passing': [],
-        'rushing': [],
-        'receiving': []
-    }
-
-    for year in years:
-        print(f"\n📊 Loading NFL regular season play-by-play data for {year}...")
-        pbp = import_pbp_data([year])
-        pbp = pbp[pbp['season_type'] == 'REG']
-
-        # ---- PASSING ----
-        passing_totals = (
-            pbp.groupby('passer_player_name')
-            .agg({'passing_yards': 'sum', 'pass_touchdown': 'sum', 'interception': 'sum'})
-            .reset_index()
-            .dropna(subset=['passer_player_name'])
-            .sort_values(by='passing_yards', ascending=False)
-        )
-        all_totals['passing'].append(passing_totals)
-
-        # ---- RUSHING ----
-        rushing_totals = (
-            pbp.groupby('rusher_player_name')
-            .agg({'rushing_yards': 'sum', 'rush_touchdown': 'sum'})
-            .reset_index()
-            .dropna(subset=['rusher_player_name'])
-            .sort_values(by='rushing_yards', ascending=False)
-        )
-        all_totals['rushing'].append(rushing_totals)
-
-        # ---- RECEIVING ----
-        receiving_tds = (
-            pbp[(pbp['pass_touchdown'] == 1) & (pbp['receiver_player_name'].notna())]
-            .groupby('receiver_player_name')
-            .size()
-            .reset_index(name='receiving_touchdowns')
-        )
-
-        receiving_totals = (
-            pbp.groupby('receiver_player_name')['receiving_yards'].sum().reset_index()
-            .merge(receiving_tds, on='receiver_player_name', how='left')
-            .fillna({'receiving_touchdowns': 0})
-            .sort_values(by='receiving_yards', ascending=False)
-        )
-        all_totals['receiving'].append(receiving_totals)
-
-        # Save to CSV
-        passing_totals.to_csv(f'{year}_REGULAR_SEASON_PASSING_TOTALS.csv', index=False)
-        rushing_totals.to_csv(f'{year}_REGULAR_SEASON_RUSHING_TOTALS.csv', index=False)
-        receiving_totals.to_csv(f'{year}_REGULAR_SEASON_RECEIVING_TOTALS.csv', index=False)
-
-    print("\n🏆 All requested season data loaded into 'all_totals' dictionary!\n")
-
-    # Combine data from all years
-    return {
-        'passing': pd.concat(all_totals['passing']),
-        'rushing': pd.concat(all_totals['rushing']),
-        'receiving': pd.concat(all_totals['receiving'])
-    }
-# ---------------------- Regular Season Totals ----------------------

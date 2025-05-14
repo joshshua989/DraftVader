@@ -3,8 +3,6 @@ import streamlit as st
 import re
 from scraper import load_adp_data, load_season_projections_qb, load_season_projections_rb, load_season_projections_wr
 from scraper import load_season_projections_te, load_season_projections_k, load_season_projections_dst
-from scraper import load_regular_season_passing_totals, load_regular_season_rushing_totals
-from scraper import load_regular_season_receiving_totals
 # ---------------------- Libraries ----------------------
 
 
@@ -100,31 +98,4 @@ def get_season_projections_dst():
         print(dst)
     print("---------------------------------------------------------------")
     return projections_dst
-
-@st.cache_data
-def get_regular_season_totals(years, stat_key): # Fetch regular season stats for the requested timeframe
-    print("⏳ Loading regular season play-by-play data from nfl_data_py library with NFL data sourced from nflfastR, "
-          "nfldata, dynastyprocess, and Draft Scout. ...")
-    if stat_key == "PASSING":
-        df = load_regular_season_passing_totals(years)
-        print("---------------------------------------------------------------")
-    return df
-
-@st.cache_data
-def get_regular_season_totals(years, stat_key): # Fetch regular season stats for the requested timeframe
-    print("⏳ Loading regular season play-by-play data from nfl_data_py library with NFL data sourced from nflfastR, "
-          "nfldata, dynastyprocess, and Draft Scout. ...")
-    if stat_key == "RUSHING":
-        df = load_regular_season_rushing_totals(years)
-        print("---------------------------------------------------------------")
-    return df
-
-@st.cache_data
-def get_regular_season_totals(years, stat_key): # Fetch regular season stats for the requested timeframe
-    print("⏳ Loading regular season play-by-play data from nfl_data_py library with NFL data sourced from nflfastR, "
-          "nfldata, dynastyprocess, and Draft Scout. ...")
-    if stat_key == "RECEIVING":
-        df = load_regular_season_receiving_totals(years)
-        print("---------------------------------------------------------------")
-    return df
 # ---------------------- Data Handling Functions ----------------------

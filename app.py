@@ -6,9 +6,9 @@ import signal
 
 from load_data import get_adp_data, get_season_projections_qb, get_season_projections_rb, get_season_projections_wr
 from load_data import get_season_projections_te, get_season_projections_k, get_season_projections_dst
-from load_data import get_regular_season_totals
 
-import data_manipulation
+import implied_points
+import boom_bust_profile
 # ---------------------- Libraries ----------------------
 
 
@@ -20,6 +20,38 @@ st.set_page_config(
     page_icon="🤖"
 )
 # ---------------------- Page Configuration ----------------------
+
+
+# ---------------------- SHUTDOWN (Development) ----------------------
+def shutdown():
+    pid = os.getpid()
+    parent = psutil.Process(pid)
+    for child in parent.children(recursive=True):
+        child.send_signal(signal.SIGTERM)
+    parent.send_signal(signal.SIGTERM)
+
+# Use columns to center the shutdown button
+col1, col2, col3 = st.columns([2, 1, 2])
+
+# Add the shutdown button for local testing
+with col2:
+    if st.button("🔴 Shut Down"):
+        st.warning("Shutting down the app...")
+        shutdown()
+# ---------------------- SHUTDOWN (Development) ----------------------
+
+
+# ---------------------- Header ----------------------
+# Print styled header
+title = "🏈 DRAFT VADER 1.0" # 🗣
+st.markdown(
+        f"<h1 style='text-align: center; font-size: 48px; color: #00ab41;'>{title}</h1>",
+        unsafe_allow_html=True
+    )
+st.write("")
+st.markdown("<p style='color: lightblue;'>🤖 <strong>Welcome to NFL Best Ball Draft 2025!</strong></p>", unsafe_allow_html=True)
+st.markdown("<p style='color: lightblue;'>🤖 <strong>I will be your personal AI assistant for the draft!</strong></p>", unsafe_allow_html=True)
+# ---------------------- Header ----------------------
 
 
 # ---------------------- Initialize Session State ----------------------
@@ -64,13 +96,6 @@ def apply_selectbox_style():
         """,
         unsafe_allow_html=True # enable HTML rendering, which is disabled by default for security reasons.
     )
-
-# function that creates a custom-styled header
-def styled_header(title: str):
-    st.markdown(
-        f"<h1 style='text-align: center; font-size: 48px; color: #00ab41;'>{title}</h1>",
-        unsafe_allow_html=True
-    )
 # ---------------------- Style ----------------------
 
 
@@ -86,25 +111,6 @@ def undo_last_pick():
         st.session_state.last_pick = None
         st.session_state.last_team = None
 # ---------------------- Button Callbacks ----------------------
-
-
-# ---------------------- SHUTDOWN (Development) ----------------------
-def shutdown():
-    pid = os.getpid()
-    parent = psutil.Process(pid)
-    for child in parent.children(recursive=True):
-        child.send_signal(signal.SIGTERM)
-    parent.send_signal(signal.SIGTERM)
-
-# Use columns to center the shutdown button
-col1, col2, col3 = st.columns([2, 1, 2])
-
-# Add the shutdown button for local testing
-with col2:
-    if st.button("🔴 Shut Down"):
-        st.warning("Shutting down the app...")
-        shutdown()
-# ---------------------- SHUTDOWN (Development) ----------------------
 
 
 # ---------------------- Script Functions ----------------------
@@ -197,21 +203,6 @@ season_projections_k = get_season_projections_k()
 # [{'team': team, 'sack': sack, 'int': int, 'fr': fr, 'ff': ff, 'td': td, 'safety': safety, 'pa': pa,
 #     'yds_agn': yds_agn, 'proj_points': proj_points}]
 season_projections_dst = get_season_projections_dst()
-
-
-seasons = [2024]
-regular_season_passing_totals_df = get_regular_season_totals(seasons, "PASSING")
-for stat_type, df in regular_season_passing_totals_df.items():
-     filename = f"{seasons}_REGULAR_SEASON_PASSING_TOTALS.csv"
-     st.write(f"Exported {filename}")
-regular_season_rushing_totals_df = get_regular_season_totals(seasons, "RUSHING")
-for stat_type, df in regular_season_rushing_totals_df.items():
-     filename = f"{seasons}_REGULAR_SEASON_RUSHING_TOTALS.csv"
-     st.write(f"Exported {filename}")
-regular_season_receiving_totals_df = get_regular_season_totals(seasons, "RECEIVING")
-for stat_type, df in regular_season_receiving_totals_df.items():
-     filename = f"{seasons}_REGULAR_SEASON_RECEIVING_TOTALS.csv"
-     st.write(f"Exported {filename}")
 # ---------------------- Data Handling - BEGIN ----------------------
 
 
@@ -222,24 +213,20 @@ adp_data_rb = [player for player in adp_rankings if player.get("pos") == "RB"]
 adp_data_wr = [player for player in adp_rankings if player.get("pos") == "WR"]
 adp_data_te = [player for player in adp_rankings if player.get("pos") == "TE"]
 
-print("\n////////// VALUE VS. ADP //////////\n")
-implied_points_df_qb = data_manipulation.calculate_value_vs_adp("QB", adp_data_qb, season_projections_qb)
-implied_points_df_rb = data_manipulation.calculate_value_vs_adp("RB", adp_data_rb, season_projections_rb)
-implied_points_df_wr = data_manipulation.calculate_value_vs_adp("WR", adp_data_wr, season_projections_wr)
-implied_points_df_te = data_manipulation.calculate_value_vs_adp("TE", adp_data_te, season_projections_te)
+print("\n////////// VALUE VS. ADP - to gauge value picks. //////////\n")
+implied_points_df_qb = implied_points.calculate_value_vs_adp("QB", adp_data_qb, season_projections_qb)
+implied_points_df_rb = implied_points.calculate_value_vs_adp("RB", adp_data_rb, season_projections_rb)
+implied_points_df_wr = implied_points.calculate_value_vs_adp("WR", adp_data_wr, season_projections_wr)
+implied_points_df_te = implied_points.calculate_value_vs_adp("TE", adp_data_te, season_projections_te)
 
-
+print("---------------------------------------------------------------")
+print("\n////////// BOOM-BUST PROFILE -- prioritize spike-week players. //////////\n")
+seasons = [2024]
+boom_bust_df = boom_bust_profile.organize_by_condition(seasons)
 # ---------------------- Data Manipulation ----------------------
 
 
 # ---------------------- User Interface ----------------------
-# calls styled_header() function to print styled header with arg "🏈 DraftVader v1.0 🤖"
-styled_header("🏈 DRAFT VADER 1.0") # 🗣
-
-st.write("")
-st.markdown("<p style='color: lightblue;'>🤖 <strong>Welcome to NFL Best Ball Draft 2025!</strong></p>", unsafe_allow_html=True)
-st.markdown("<p style='color: lightblue;'>🤖 <strong>I will be your personal AI assistant for the draft!</strong></p>", unsafe_allow_html=True)
-
 # determines which team is currently making a draft pick in a snake draft format
 team_picking_int = get_team_picking()
 

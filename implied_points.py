@@ -25,7 +25,7 @@ def calculate_value_vs_adp(position, adp, projected_fpts):
         projected_fpts = pd.DataFrame(projected_fpts)
 
     print("---------------------------------------------------------------")
-    print(f"⏳ Merging ADP dataframe (x) and {position} Season Projections dataframe (y)...")
+    print(f"⏳ Merging ADP dataframe (x) and {position} Season Projections dataframe (y) ...")
     # Merge ADP and points data on player name
     data = pd.merge(adp, projected_fpts, on="name")
 
@@ -33,7 +33,7 @@ def calculate_value_vs_adp(position, adp, projected_fpts):
     X = data['adp'].values.reshape(-1, 1)  # ADP as independent variable
     y = data['proj_points'].values  # Fantasy points as dependent variable
 
-    print("⏳ Fitting a linear regression model...")
+    print("⏳ Fitting a linear regression model ...")
     # Fit a linear regression model
     model = LinearRegression()
     model.fit(X, y)
@@ -41,7 +41,7 @@ def calculate_value_vs_adp(position, adp, projected_fpts):
     # Predict implied points based on ADP
     data['implied_points'] = model.predict(X)
 
-    print("⏳ Plotting the regression line...")
+    print("⏳ Plotting the regression line ...")
     # Plotting the regression line
     plt.figure(figsize=(8, 5))
     plt.scatter(data['adp'], data['proj_points'], color='blue', label=f"{position} Data")
