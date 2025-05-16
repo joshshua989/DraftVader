@@ -110,10 +110,13 @@ def organize_by_condition(years):
     # Sort the merged dataframe by Spike Week Score in descending order
     top_10 = merged.sort_values(by='spike_week_score', ascending=False).head(10)
 
-    # ---------------------- Display Cleanup for UI ----------------------
+    # ---------------------- Display Cleanup Logic for UI ----------------------
     # Display the Spike Week Scores
     st.write("")
-    st.markdown("<p style='color: lightblue;'>🤖 <strong>All-Player 'Spike Week Score' Analysis:</strong></p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: lightblue;'>🤖 "
+                "<strong>"
+                    "All-Player 'Spike Week Score' Analysis:"
+                "</strong></p>", unsafe_allow_html=True)
 
     # Format the percentage columns for display
     formatted_merged = merged.copy()
@@ -154,10 +157,12 @@ def organize_by_condition(years):
     for index, row in top_10.iterrows():
         print(f"{row['player_display_name']}: {int(row['total_games'])} total games | "
               f"Spike Week Score: {row['spike_week_score']:.2f} | "
-              f"{int(row['over_20_ppr_count'])} games over 20, {int(row['over_25_ppr_count'])} over 25, {int(row['over_30_ppr_count'])} over 30 | "
-              f"{int(row['under_5_ppr_count'])} under 5, {int(row['under_10_ppr_count'])} under 10, {int(row['under_15_ppr_count'])} under 15")
+              f"{int(row['over_20_ppr_count'])} games over 20, {int(row['over_25_ppr_count'])} over 25, "
+              f"{int(row['over_30_ppr_count'])} over 30 | "
+              f"{int(row['under_5_ppr_count'])} under 5, {int(row['under_10_ppr_count'])} under 10, "
+              f"{int(row['under_15_ppr_count'])} under 15")
 
     return merged
-    # ---------------------- Display Cleanup for UI ----------------------
+    # ---------------------- Display Cleanup Logic for UI ----------------------
 
 # ---------------------- Organize by Condition Function ----------------------

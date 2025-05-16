@@ -10,24 +10,40 @@ from nfl_data_py import import_pbp_data
 
 # ---------------------- Script Functions ----------------------
 # Extract player name, team, and bye week from player_info
-def extract_player_info(player_info):
-    # Team abbreviations (used to parse out the team abbreviation from the player name in the table data scraped from FantasyPros)
-    team_abbr = ['ARI', 'ATL', 'BAL', 'BUF', 'CAR', 'CHI', 'CIN', 'CLE', 'DAL', 'DEN', 'DET', 'GB', 'HOU', 'IND', 'JAX',
-                 'KC', 'LV', 'LAC', 'LAR', 'MIA', 'MIN', 'NE', 'NO', 'NYG', 'NYJ', 'PHI', 'PIT', 'SF', 'SEA', 'TB',
-                 'TEN', 'WAS']
+# def extract_player_info(player_info):
+#     # Team abbreviations (used to parse out the team abbreviation from the player name in the table data scraped from FantasyPros)
+#     team_abbr = ['ARI', 'ATL', 'BAL', 'BUF', 'CAR', 'CHI', 'CIN', 'CLE', 'DAL', 'DEN', 'DET', 'GB', 'HOU', 'IND', 'JAX',
+#                  'KC', 'LV', 'LAC', 'LAR', 'MIA', 'MIN', 'NE', 'NO', 'NYG', 'NYJ', 'PHI', 'PIT', 'SF', 'SEA', 'TB',
+#                  'TEN', 'WAS']
+#
+#     # Use regex to capture the player name, team, and bye week
+#     match = re.match(r"^(.*?)\s+([A-Z]{2,3})\s*\((\d+)\)$", player_info)
+#     if match:
+#         name = match.group(1).strip()
+#         team = match.group(2)
+#         bye_week = int(match.group(3))
+#     else:#
+#         # Fallback if the pattern doesn't match
+#         player_name_parts = player_info.split()
+#         team = player_name_parts[-1] if player_name_parts[-1] in team_abbr else ''
+#         name = ' '.join(player_name_parts[:-1]) if team else player_info
+#         bye_week = None
+#
+#     return name, team, bye_week
 
-    # Use regex to capture the player name, team, and bye week
-    match = re.match(r"(.*)\s+(\w+)\s+\((\d+)\)", player_info)
+def extract_player_info(player_info):
+    # Try to match the player name, team, and bye week
+    match = re.match(r"^(.*?)\s+([A-Z]{2,3})\s*\((\d+)\)$", player_info)
     if match:
         name = match.group(1).strip()
         team = match.group(2)
         bye_week = int(match.group(3))
     else:
-        # Fallback if the pattern doesn't match
-        player_name_parts = player_info.split()
-        team = player_name_parts[-1] if player_name_parts[-1] in team_abbr else ''
-        name = ' '.join(player_name_parts[:-1]) if team else player_info
+        # Check if the string only contains the player's name without team/bye week
+        name = player_info.strip()
+        team = None
         bye_week = None
+        print(f"Player without team/bye week: {player_info}")
 
     return name, team, bye_week
 # ---------------------- Script Functions ----------------------
@@ -62,6 +78,7 @@ def load_adp_data():
             players.append({
                 'rank': rank,
                 'name': name,
+                'team': team,
                 'pos': pos,
                 'bye_week': bye_week,
                 'adp': adp

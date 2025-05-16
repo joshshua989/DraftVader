@@ -3,6 +3,7 @@ import os
 import streamlit as st
 import psutil
 import signal
+import math
 from load_data import get_adp_data, get_season_projections_qb, get_season_projections_rb, get_season_projections_wr
 from load_data import get_season_projections_te, get_season_projections_k, get_season_projections_dst
 import implied_points
@@ -47,8 +48,14 @@ st.markdown(
         unsafe_allow_html=True
     )
 st.write("")
-st.markdown("<p style='color: lightblue;'>🤖 <strong>Welcome to NFL Best Ball Draft 2025!</strong></p>", unsafe_allow_html=True)
-st.markdown("<p style='color: lightblue;'>🤖 <strong>I will be your personal AI assistant for the draft!</strong></p>", unsafe_allow_html=True)
+st.markdown("<p style='color: lightblue;'>🤖 "
+            "<strong>"
+                "Welcome to NFL Best Ball Draft 2025!"
+            "</strong></p>", unsafe_allow_html=True)
+st.markdown("<p style='color: lightblue;'>🤖 "
+            "<strong>"
+                "I will be your personal AI assistant for the draft!"
+            "</strong></p>", unsafe_allow_html=True)
 # ---------------------- Header ----------------------
 
 
@@ -265,10 +272,14 @@ st.markdown("<h3 style='color: #00ab41;'>✅ Pick Selection</h3>", unsafe_allow_
 
 st.markdown("<p style='color: lightblue;'>🤖 <strong>Please make the first pick!</strong></p>", unsafe_allow_html=True)
 
-# Creates a list of available players, sorted by their Average Draft Position (ADP).
 available_players_list = [
-    {"name": p['name'], "pos": p['pos']}
-    # sorted() function orders the list of players based on the 'adp' value in ascending order
+    {
+        "name": p['name'],
+        "pos": p['pos'],
+        "adp": p.get('adp', None),
+        "team": p.get('team', None),
+        "bye_week": p.get('bye_week', None)
+    }
     for p in sorted(get_available_players(adp_rankings), key=lambda p: p['adp'])
 ]
 
@@ -309,6 +320,95 @@ with col1:
         index=None,
         placeholder="--- Select Player ---"
     )
+
+# Display player information when selected
+if player_choice:
+    # Extract player name from the formatted string (e.g., "Ja'Marr Chase (WR)")
+    selected_name = player_choice.split(" (")[0]
+
+    # Find the player dictionary in the available_players_list
+    player_info = next((p for p in available_players_list if p['name'] == selected_name), None)
+
+    # Define a dictionary to map position to the corresponding implied points DataFrame
+    implied_points_dfs = {
+        "QB": implied_points_df_qb,
+        "RB": implied_points_df_rb,
+        "WR": implied_points_df_wr,
+        "TE": implied_points_df_te
+    }
+
+    if player_info:
+        st.markdown(
+            f"<h3 style='color: #0098f5;'>Player Information: {player_info['name']}</h3>",
+            unsafe_allow_html=True
+        )
+
+        code_text = '''
+        Player Overview:
+        '''
+        st.markdown(f"```python\n{code_text}\n```")
+
+        st.write(f"ADP: {player_info['adp']}")
+        st.write(f"Team: {player_info['team']}")
+        st.write(f"Position: {player_info['pos']}")
+
+        # Display bye week, handling cases where the value is NaN
+        if player_info['bye_week'] is not None and not math.isnan(player_info['bye_week']):
+            st.write(f"Bye Week: {int(player_info['bye_week'])}")
+        else:
+            st.write("Bye Week: Not available")
+
+        code_text = '''
+        Value vs. ADP Analysis:
+        '''
+        st.markdown(f"```python\n{code_text}\n```")
+
+        # Retrieve implied points DataFrame based on position
+        implied_points_df = implied_points_dfs.get(player_info['pos'])
+        if implied_points_df is not None:
+            matched = implied_points_df.loc[
+                implied_points_df['name'] == player_info['name'],
+                ['proj_points', 'implied_points', 'value_vs_adp']
+            ]
+            if not matched.empty:
+                proj_points = matched['proj_points'].values[0]
+                implied_points = matched['implied_points'].values[0]
+                st.write(f"Projected Points: {proj_points:.2f}")
+                st.write(f"Implied Points: {implied_points:.2f}")
+
+                # Display value_vs_adp if available
+                if 'value_vs_adp' in matched.columns:
+                    value_vs_adp = matched['value_vs_adp'].values[0]
+                    sign = "+" if value_vs_adp > 0 else ""
+                    st.write(f"Value vs. ADP: {sign}{value_vs_adp:.2f}")
+                else:
+                    st.write("Value vs. ADP: Not available")
+
+            else:
+                st.write("Projected Points: Not available")
+                st.write("Implied Points: Not available")
+                st.write("Value vs. ADP: Not available")
+        else:
+            st.write("Projected Points: Not available")
+            st.write("Implied Points: Not available")
+            st.write("Value vs. ADP: Not available")
+
+        code_text = '''
+        Spike Week Score:
+        '''
+        st.markdown(f"```python\n{code_text}\n```")
+
+        # Retrieve spike_week_score from the boom_bust_df DataFrame
+        spike_week_score = boom_bust_df.loc[
+            boom_bust_df['player_display_name'] == player_info['name'], 'spike_week_score'
+        ]
+        if not spike_week_score.empty:
+            st.write(f"Spike Week Score: {spike_week_score.values[0]:.2f}")
+        else:
+            st.write("Spike Week Score: Not available")
+    else:
+        st.write("Player not found.")
+
 # ------------------------------------- CONTINUE -------------------------------------------
 
 # Draft Buttons: Next Pick and Undo Last Pick
