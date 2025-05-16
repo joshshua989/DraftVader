@@ -3,10 +3,8 @@ import os
 import streamlit as st
 import psutil
 import signal
-
 from load_data import get_adp_data, get_season_projections_qb, get_season_projections_rb, get_season_projections_wr
 from load_data import get_season_projections_te, get_season_projections_k, get_season_projections_dst
-
 import implied_points
 import boom_bust_profile
 # ---------------------- Libraries ----------------------
@@ -45,7 +43,7 @@ with col2:
 # Print styled header
 title = "🏈 DRAFT VADER 1.0" # 🗣
 st.markdown(
-        f"<h1 style='text-align: center; font-size: 48px; color: #00ab41;'>{title}</h1>",
+        f"<h1 style='text-align: center; font-size: 48px; color: #0098f5;'>{title}</h1>",
         unsafe_allow_html=True
     )
 st.write("")
@@ -180,7 +178,11 @@ def get_available_players(players_2025):
 # initialize session state variables to ensure they have default values before the user interacts with the app.
 initialize_session_state()
 
-print("\n////////// DATA SCRAPING //////////\n")
+# Check if the Data Scraping message has been shown before printing to terminal
+if 'data_scraping_shown' not in st.session_state:
+    print("\n////////// DATA SCRAPING //////////\n")
+    st.session_state['data_scraping_shown'] = True
+
 # calls load_adp_data() function and stores a list of dictionaries in the adp_rankings variable
 # [{'rank': rank, 'name': name, 'pos': pos, 'adp': adp}, ...]
 adp_rankings = get_adp_data()
@@ -213,14 +215,22 @@ adp_data_rb = [player for player in adp_rankings if player.get("pos") == "RB"]
 adp_data_wr = [player for player in adp_rankings if player.get("pos") == "WR"]
 adp_data_te = [player for player in adp_rankings if player.get("pos") == "TE"]
 
-print("\n////////// VALUE VS. ADP - to gauge value picks. //////////\n")
+# Check if the message has been shown before printing to terminal
+if 'value_vs_adp_shown' not in st.session_state:
+    print("\n////////// VALUE VS. ADP - to gauge value picks. //////////\n")
+    st.session_state['value_vs_adp_shown'] = True
+
 implied_points_df_qb = implied_points.calculate_value_vs_adp("QB", adp_data_qb, season_projections_qb)
 implied_points_df_rb = implied_points.calculate_value_vs_adp("RB", adp_data_rb, season_projections_rb)
 implied_points_df_wr = implied_points.calculate_value_vs_adp("WR", adp_data_wr, season_projections_wr)
 implied_points_df_te = implied_points.calculate_value_vs_adp("TE", adp_data_te, season_projections_te)
 
-print("---------------------------------------------------------------")
-print("\n////////// BOOM-BUST PROFILE -- prioritize spike-week players. //////////\n")
+# Check if the Boom-Bust message has been shown before printing to terminal
+if 'boom_bust_profile_shown' not in st.session_state:
+    print("---------------------------------------------------------------")
+    print("\n////////// BOOM-BUST PROFILE -- prioritize spike-week players. //////////\n")
+    st.session_state['boom_bust_profile_shown'] = True
+
 seasons = [2024]
 boom_bust_df = boom_bust_profile.organize_by_condition(seasons)
 # ---------------------- Data Manipulation ----------------------
@@ -242,8 +252,8 @@ with st.sidebar:
     st.write(f"**Last Pick:** {st.session_state.last_pick}")
     st.write(f"**Last Team:** {st.session_state.last_team}")
 
-st.markdown("<h3 style='color: #0098f5;'>🚩 Let's Begin!</h3>", unsafe_allow_html=True) # 🛠
-st.write("- Teams: 12 | Format: Snake, full-PPR")
+st.markdown("<h3 style='color: #00ab41;'>🚩 Let's Begin!</h3>", unsafe_allow_html=True) # 🛠
+st.write("- Teams: 12 | Format: Snake, Full-PPR")
 st.write(f"- Round: {current_round}")
 st.markdown(
     f"<h3 style='font-size:18px;'> 🕒 On the Clock: {current_team} | Pick Number: {st.session_state.pick_number+1}</h3>",
@@ -251,7 +261,7 @@ st.markdown(
 )
 
 # Uses Streamlit to display a subheader with the text "🚩️ Pick Selection".
-st.markdown("<h3 style='color: #0098f5;'>✅ Pick Selection</h3>", unsafe_allow_html=True) # 🗳
+st.markdown("<h3 style='color: #00ab41;'>✅ Pick Selection</h3>", unsafe_allow_html=True) # 🗳
 
 st.markdown("<p style='color: lightblue;'>🤖 <strong>Please make the first pick!</strong></p>", unsafe_allow_html=True)
 
@@ -299,7 +309,6 @@ with col1:
         index=None,
         placeholder="--- Select Player ---"
     )
-
 # ------------------------------------- CONTINUE -------------------------------------------
 
 # Draft Buttons: Next Pick and Undo Last Pick

@@ -1,10 +1,36 @@
 # ---------------------- Libraries ----------------------
 import requests
 import streamlit as st
+import re
 import pandas as pd
 from bs4 import BeautifulSoup
 from nfl_data_py import import_pbp_data
 # ---------------------- Libraries ----------------------
+
+
+# ---------------------- Script Functions ----------------------
+# Extract player name, team, and bye week from player_info
+def extract_player_info(player_info):
+    # Team abbreviations (used to parse out the team abbreviation from the player name in the table data scraped from FantasyPros)
+    team_abbr = ['ARI', 'ATL', 'BAL', 'BUF', 'CAR', 'CHI', 'CIN', 'CLE', 'DAL', 'DEN', 'DET', 'GB', 'HOU', 'IND', 'JAX',
+                 'KC', 'LV', 'LAC', 'LAR', 'MIA', 'MIN', 'NE', 'NO', 'NYG', 'NYJ', 'PHI', 'PIT', 'SF', 'SEA', 'TB',
+                 'TEN', 'WAS']
+
+    # Use regex to capture the player name, team, and bye week
+    match = re.match(r"(.*)\s+(\w+)\s+\((\d+)\)", player_info)
+    if match:
+        name = match.group(1).strip()
+        team = match.group(2)
+        bye_week = int(match.group(3))
+    else:
+        # Fallback if the pattern doesn't match
+        player_name_parts = player_info.split()
+        team = player_name_parts[-1] if player_name_parts[-1] in team_abbr else ''
+        name = ' '.join(player_name_parts[:-1]) if team else player_info
+        bye_week = None
+
+    return name, team, bye_week
+# ---------------------- Script Functions ----------------------
 
 
 # ---------------------- ADP Data ----------------------
@@ -22,10 +48,6 @@ def load_adp_data():
     # Initialize a list to store player data
     players = []
 
-    # Team abbreviations (used to parse out the team abbreviation from the player name in the table data scraped from FantasyPros)
-    team_abbr = ['ARI', 'ATL', 'BAL', 'BUF', 'CAR', 'CHI', 'CIN', 'CLE', 'DAL', 'DEN', 'DET', 'GB', 'HOU', 'IND', 'JAX',
-                 'KC', 'LV', 'LAC', 'LAR', 'MIA', 'MIN', 'NE', 'NO', 'NYG', 'NYJ', 'PHI', 'PIT', 'SF', 'SEA', 'TB', 'TEN', 'WAS']
-
     # Iterate over the table rows, skipping the header
     for row in table.tbody.find_all('tr'):
         cols = row.find_all('td')
@@ -35,15 +57,13 @@ def load_adp_data():
             pos = cols[2].text.strip()
             adp = cols[7].text.strip()
 
-            # Extract player name and team from player_info
-            player_name_parts = player_info.split()
-            team = player_name_parts[-1] if player_name_parts[-1] in team_abbr else ''
-            name = ' '.join(player_name_parts[:-1]) if team else player_info
+            name, team, bye_week = extract_player_info(player_info)
 
             players.append({
                 'rank': rank,
                 'name': name,
                 'pos': pos,
+                'bye_week': bye_week,
                 'adp': adp
             })
 
@@ -51,7 +71,7 @@ def load_adp_data():
     df = pd.DataFrame(players)
 
     # Normalize numeric columns
-    for col in ['rank', 'adp']:
+    for col in ['rank', 'bye_week', 'adp']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
     # Drop rows with missing essential values

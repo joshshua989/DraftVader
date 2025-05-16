@@ -50,6 +50,9 @@ def calculate_value_vs_adp(position, adp, projected_fpts):
     plt.ylabel('2025 Projected Fantasy Points')
     plt.title(f"ADP Implied Fantasy Points Study - {position}")
     plt.legend()
+
+    # Display the scatter plot graphs
+    st.markdown(f"<p style='color: lightblue;'>🤖 <strong>{position} Value vs. ADP Analysis:</strong></p>", unsafe_allow_html=True)
     st.pyplot(plt.gcf()) # Display the plot in Streamlit
 
     data['value_vs_adp'] = y - data['implied_points']

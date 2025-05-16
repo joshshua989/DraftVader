@@ -56,7 +56,7 @@ def calculate_spike_score(row):
 # ---------------------- Script Functions ----------------------
 
 
-# ---------------------- Boom-Bust Profile ----------------------
+# ---------------------- Organize by Condition Function ----------------------
 @st.cache_data
 def organize_by_condition(years):
     print("---------------------------------------------------------------")
@@ -79,36 +79,75 @@ def organize_by_condition(years):
     # Merge all dataframes
     merged = (
         total_games
-        .merge(over_20_ppr, on='player_display_name', how='outer')
-        .merge(over_25_ppr, on='player_display_name', how='outer')
         .merge(over_30_ppr, on='player_display_name', how='outer')
-        .merge(under_5_ppr, on='player_display_name', how='outer')
-        .merge(under_10_ppr, on='player_display_name', how='outer')
+        .merge(over_25_ppr, on='player_display_name', how='outer')
+        .merge(over_20_ppr, on='player_display_name', how='outer')
         .merge(under_15_ppr, on='player_display_name', how='outer')
+        .merge(under_10_ppr, on='player_display_name', how='outer')
+        .merge(under_5_ppr, on='player_display_name', how='outer')
         .fillna(0)
     )
 
-    # Calculate percentages for each category
-    for threshold in [20, 25, 30]:
+    # Calculate percentages for each category with two decimal places (as floats)
+    for threshold in [30, 25, 20]:
         merged[f'over_{threshold}_ppr_percentage'] = (
-            merged[f'over_{threshold}_ppr_count'] / merged['total_games'] * 100
+            (merged[f'over_{threshold}_ppr_count'] / merged['total_games'] * 100).round(2)
         )
-    for threshold in [5, 10, 15]:
+    for threshold in [15, 10, 5]:
         merged[f'under_{threshold}_ppr_percentage'] = (
-            merged[f'under_{threshold}_ppr_count'] / merged['total_games'] * 100
+            (merged[f'under_{threshold}_ppr_count'] / merged['total_games'] * 100).round(2)
         )
 
     print("⏳ Calculating 'Spike Week' scores ...")
     # Calculate the Spike Week Score
     merged['spike_week_score'] = merged.apply(calculate_spike_score, axis=1)
 
+    # Reorder columns to put 'spike_week_score' in the second position
+    cols = list(merged.columns)
+    cols.insert(1, cols.pop(cols.index('spike_week_score')))
+    merged = merged[cols]
+
     # Sort the merged dataframe by Spike Week Score in descending order
     top_10 = merged.sort_values(by='spike_week_score', ascending=False).head(10)
 
+    # ---------------------- Display Cleanup for UI ----------------------
+    # Display the Spike Week Scores
     st.write("")
-    st.markdown("<p style='color: lightblue;'>🤖 <strong>Spike Week Scores:</strong></p>",
-                unsafe_allow_html=True)
-    st.write(merged.sort_values(by='spike_week_score', ascending=False))
+    st.markdown("<p style='color: lightblue;'>🤖 <strong>All-Player 'Spike Week Score' Analysis:</strong></p>", unsafe_allow_html=True)
+
+    # Format the percentage columns for display
+    formatted_merged = merged.copy()
+    for col in formatted_merged.columns:
+        if '_ppr_percentage' in col:
+            formatted_merged[col] = formatted_merged[col].astype(str) + '%'
+
+    # Create a copy for display
+    display_df = formatted_merged.copy()
+
+    # Define a dictionary to rename columns for display
+    rename_dict = {
+        'player_display_name': 'Player Name',
+        'spike_week_score': 'Spike Week Score',
+        'total_games': 'Total Games',
+        'over_30_ppr_count': '>30 Point Games',
+        'over_25_ppr_count': '>25 Point Games',
+        'over_20_ppr_count': '>20 Point Games',
+        'under_15_ppr_count': '<15 Point Games',
+        'under_10_ppr_count': '<10 Point Games',
+        'under_5_ppr_count': '<5 Point Games',
+        'over_30_ppr_percentage': '>30 PPR %',
+        'over_25_ppr_percentage': '>25 PPR %',
+        'over_20_ppr_percentage': '>20 PPR %',
+        'under_15_ppr_percentage': '<15 PPR %',
+        'under_10_ppr_percentage': '<10 PPR %',
+        'under_5_ppr_percentage': '<5 PPR %'
+    }
+
+    # Rename columns in the copy for display only
+    display_df.rename(columns=rename_dict, inplace=True)
+
+    # Display the formatted DataFrame
+    st.write(display_df.sort_values(by='Spike Week Score', ascending=False))
 
     # Print the top 10 players with boom, bust, spike week scores, and total games played
     print("\nTop 10 Players by Spike Week Score:")
@@ -119,4 +158,6 @@ def organize_by_condition(years):
               f"{int(row['under_5_ppr_count'])} under 5, {int(row['under_10_ppr_count'])} under 10, {int(row['under_15_ppr_count'])} under 15")
 
     return merged
-# ---------------------- Boom-Bust Profile ----------------------
+    # ---------------------- Display Cleanup for UI ----------------------
+
+# ---------------------- Organize by Condition Function ----------------------
