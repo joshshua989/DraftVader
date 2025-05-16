@@ -61,6 +61,8 @@ def calculate_spike_score(row):
 def organize_by_condition(years):
     print("---------------------------------------------------------------")
     print(f"⏳ Importing weekly NFL data from {years} ...")
+
+    # Imports weekly NFL data for the specified years using the nfl library.
     weekly_data = nfl.import_weekly_data(years)
 
     # Calculate games over 20, 25, and 30 PPR points (Boom)

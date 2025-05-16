@@ -216,7 +216,7 @@ season_projections_dst = get_season_projections_dst()
 
 
 # ---------------------- Data Manipulation ----------------------
-# Filter the list to include only QBs
+# Filters the adp_rankings list of player dictionaries to create separate lists for each position (QB, RB, WR, TE).
 adp_data_qb = [player for player in adp_rankings if player.get("pos") == "QB"]
 adp_data_rb = [player for player in adp_rankings if player.get("pos") == "RB"]
 adp_data_wr = [player for player in adp_rankings if player.get("pos") == "WR"]
@@ -227,6 +227,8 @@ if 'value_vs_adp_shown' not in st.session_state:
     print("\n////////// VALUE VS. ADP - to gauge value picks. //////////\n")
     st.session_state['value_vs_adp_shown'] = True
 
+# Calculates the implied points vs. ADP (Average Draft Position) for each position (QB, RB, WR, TE) using a function
+# called calculate_value_vs_adp() from the implied_points module.
 implied_points_df_qb = implied_points.calculate_value_vs_adp("QB", adp_data_qb, season_projections_qb)
 implied_points_df_rb = implied_points.calculate_value_vs_adp("RB", adp_data_rb, season_projections_rb)
 implied_points_df_wr = implied_points.calculate_value_vs_adp("WR", adp_data_wr, season_projections_wr)
@@ -238,6 +240,7 @@ if 'boom_bust_profile_shown' not in st.session_state:
     print("\n////////// BOOM-BUST PROFILE -- prioritize spike-week players. //////////\n")
     st.session_state['boom_bust_profile_shown'] = True
 
+# Calculates the Boom-Bust profile for players based on a list of seasons, specifically for the year
 seasons = [2024]
 boom_bust_df = boom_bust_profile.organize_by_condition(seasons)
 # ---------------------- Data Manipulation ----------------------

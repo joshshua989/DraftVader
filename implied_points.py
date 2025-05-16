@@ -19,10 +19,16 @@ def calculate_value_vs_adp(position, adp, projected_fpts):
     Returns:
         pd.DataFrame: DataFrame with player name, ADP, and implied points.
     """
+
+    # Checks the data type of the variables adp and projected_fpts.
+    # If adp is a list, it converts the list into a Pandas DataFrame.
     if isinstance(adp, list):
         adp = pd.DataFrame(adp)
+    # If projected_fpts is a list, it converts it into a Pandas DataFrame.
     if isinstance(projected_fpts, list):
         projected_fpts = pd.DataFrame(projected_fpts)
+    # Further... This is useful when the input data can come in different formats (like a list or a DataFrame).
+    # Further... Ensures consistency in data processing by always working with DataFrames after these checks.
 
     print("---------------------------------------------------------------")
     print(f"⏳ Merging ADP dataframe (x) and {position} Season Projections dataframe (y) ...")
