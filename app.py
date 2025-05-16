@@ -227,8 +227,8 @@ if 'value_vs_adp_shown' not in st.session_state:
     print("\n////////// VALUE VS. ADP - to gauge value picks. //////////\n")
     st.session_state['value_vs_adp_shown'] = True
 
-# Calculates the implied points vs. ADP (Average Draft Position) for each position (QB, RB, WR, TE) using a function
-# called calculate_value_vs_adp() from the implied_points module.
+# Calculates the implied points vs. ADP for each position (QB, RB, WR, TE) using a function called
+# calculate_value_vs_adp() from the implied_points module.
 implied_points_df_qb = implied_points.calculate_value_vs_adp("QB", adp_data_qb, season_projections_qb)
 implied_points_df_rb = implied_points.calculate_value_vs_adp("RB", adp_data_rb, season_projections_rb)
 implied_points_df_wr = implied_points.calculate_value_vs_adp("WR", adp_data_wr, season_projections_wr)
@@ -247,21 +247,24 @@ boom_bust_df = boom_bust_profile.organize_by_condition(seasons)
 
 
 # ---------------------- User Interface ----------------------
-# determines which team is currently making a draft pick in a snake draft format
+# Determines which team is currently making a draft pick in a snake draft format.
 team_picking_int = get_team_picking()
 
-# create a string that represents the name of the team based on the current pick count.
+# Create a string that represents the name of the team based on the current pick count.
 # (e.g., "pick_count = 1, current_team returns: Team 1")
 current_team = f"Team {team_picking_int}"
 
+# Calculates the current draft round based on the current pick number and the number of teams (or picks per round).
 current_round = (st.session_state.pick_number // len(st.session_state.pick_order))+1
 
+# Creates a sidebar section in a Streamlit app and displays some information there.
 with st.sidebar:
     st.write("**Team Rosters:**")
     st.write(st.session_state.teams)
     st.write(f"**Last Pick:** {st.session_state.last_pick}")
     st.write(f"**Last Team:** {st.session_state.last_team}")
 
+# Display some styled and dynamic draft-related info in the Streamlit app.
 st.markdown("<h3 style='color: #00ab41;'>🚩 Let's Begin!</h3>", unsafe_allow_html=True) # 🛠
 st.write("- Teams: 12 | Format: Snake, Full-PPR")
 st.write(f"- Round: {current_round}")
@@ -270,11 +273,12 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Uses Streamlit to display a subheader with the text "🚩️ Pick Selection".
+# Uses Streamlit to display a subheader with the text "✅️ Pick Selection".
 st.markdown("<h3 style='color: #00ab41;'>✅ Pick Selection</h3>", unsafe_allow_html=True) # 🗳
 
 st.markdown("<p style='color: lightblue;'>🤖 <strong>Please make the first pick!</strong></p>", unsafe_allow_html=True)
 
+# Creates a list of available players with selected info, sorted by ADP (Average Draft Position).
 available_players_list = [
     {
         "name": p['name'],
