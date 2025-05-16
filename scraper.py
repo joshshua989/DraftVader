@@ -1,10 +1,8 @@
 # ---------------------- Libraries ----------------------
 import requests
-import streamlit as st
 import re
 import pandas as pd
 from bs4 import BeautifulSoup
-from nfl_data_py import import_pbp_data
 # ---------------------- Libraries ----------------------
 
 
@@ -49,55 +47,121 @@ def extract_player_info(player_info):
 # ---------------------- Script Functions ----------------------
 
 
+# ---------------------- NFL Player Data ----------------------
+# def scrape_nfl_player_data(year, url):
+#     try:
+#         # Send a GET request to the specified URL:
+#         response = requests.get(url)
+#         # Check for HTTP errors:
+#         response.raise_for_status()
+#         # Parse the HTML content of the response:
+#         soup = BeautifulSoup(response.text, 'html.parser')
+#         # Find a specific HTML table:
+#         table = soup.find('table', {'id': 'fantasy'})
+#
+#         # Check if the table exists
+#         if not table:
+#             print("Error: Table with id 'fantasy' not found.")
+#             return None
+#
+#         # Find all table rows (<tr> tags) within a table:
+#         rows = table.find_all('tr')
+#         # Initialize an empty list to store data:
+#         data = []
+#
+#         # Step 1: Extract Table Headers - headers contains the column names.
+#         headers = [th.get_text() for th in rows[1].find_all('th')]
+#         # Step 2: Extract Data from Remaining Rows - data contains the rows of the table, where each row is a list of cell values.
+#         for row in rows[2:]:  # rows[1:]: Skips the first row (headers) and iterates through the remaining rows.
+#             # find_all(['th', 'td']): Finds all data cells (both header and data cells) in the current row.
+#             # td.get_text(): Extracts the text from each cell.
+#             # cols: A list of all text values from the cells in the current row.
+#             cols = [td.get_text() for td in row.find_all(['th', 'td'])]
+#
+#             # Only add the row if it matches the length of headers
+#             if len(cols) == len(headers):
+#                 data.append(cols)
+#             else:
+#                 print(f"Warning: Row length mismatch: {len(cols)} columns (expected {len(headers)})")
+#
+#         # Check if data was collected
+#         if not data:
+#             print("Error: No valid data found in the table.")
+#             return None
+#
+#         # Create a DataFrame from the scraped data
+#         df = pd.DataFrame(data, columns=headers)
+#         # Save the DataFrame to a CSV file
+#         df.to_csv(f'nfl_player_data_{year}.csv', index=False)
+#         # Print a Confirmation Message
+#         print(f"Data scraped and saved to nfl_player_data_{year}.csv")
+#         return df.to_dict(orient='records')
+#
+#     except requests.RequestException as e:
+#         print(f"HTTP request error: {e}")
+#         return None
+#     except Exception as e:
+#         print(f"An unexpected error occurred: {e}")
+#         return None
+# ---------------------- NFL Player Data ----------------------
+
+
 # ---------------------- ADP Data ----------------------
 def load_adp_data():
-    # URL of the FantasyPros Best Ball ADP page
-    url = 'https://www.fantasypros.com/nfl/adp/best-ball-overall.php'
+    try:
+        # URL of the FantasyPros Best Ball ADP page
+        url = 'https://www.fantasypros.com/nfl/adp/best-ball-overall.php'
 
-    # Fetch the page content
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'html.parser')
+        response = requests.get(url)
+        soup = BeautifulSoup(response.text, 'html.parser')
 
-    # Locate the table containing the ADP data
-    table = soup.find('table', {'id': 'data'})
+        # Locate the table containing the ADP data
+        table = soup.find('table', {'id': 'data'})
 
-    # Initialize a list to store player data
-    players = []
+        # Initialize a list to store player data
+        players = []
 
-    # Iterate over the table rows, skipping the header
-    for row in table.tbody.find_all('tr'):
-        cols = row.find_all('td')
-        if len(cols) >= 3:
-            rank = cols[0].text.strip()
-            player_info = cols[1].text.strip()
-            pos = cols[2].text.strip()
-            adp = cols[7].text.strip()
+        # Iterate over the table rows, skipping the header
+        for row in table.tbody.find_all('tr'):
+            cols = row.find_all('td')
+            if len(cols) >= 3:
+                rank = cols[0].text.strip()
+                player_info = cols[1].text.strip()
+                pos = cols[2].text.strip()
+                adp = cols[7].text.strip()
 
-            name, team, bye_week = extract_player_info(player_info)
+                name, team, bye_week = extract_player_info(player_info)
 
-            players.append({
-                'rank': rank,
-                'name': name,
-                'team': team,
-                'pos': pos,
-                'bye_week': bye_week,
-                'adp': adp
-            })
+                players.append({
+                    'rank': rank,
+                    'name': name,
+                    'team': team,
+                    'pos': pos,
+                    'bye_week': bye_week,
+                    'adp': adp
+                })
 
-    # Convert to DataFrame
-    df = pd.DataFrame(players)
+        # Convert to DataFrame
+        df = pd.DataFrame(players)
 
-    # Normalize numeric columns
-    for col in ['rank', 'bye_week', 'adp']:
-        df[col] = pd.to_numeric(df[col], errors='coerce')
+        # Normalize numeric columns
+        for col in ['rank', 'bye_week', 'adp']:
+            df[col] = pd.to_numeric(df[col], errors='coerce')
 
-    # Drop rows with missing essential values
-    df = df.dropna(subset=['name', 'adp'])
+        # Drop rows with missing essential values
+        df = df.dropna(subset=['name', 'adp'])
 
-    # Sort by fantasy points descending
-    df = df.sort_values(by='rank', ascending=True)
+        # Sort by fantasy points descending
+        df = df.sort_values(by='rank', ascending=True)
 
-    return df.to_dict(orient='records')
+        return df.to_dict(orient='records')
+
+    except requests.RequestException as e:
+        print(f"HTTP request error: {e}")
+        return None
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return None
 # ---------------------- ADP Data ----------------------
 
 

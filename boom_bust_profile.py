@@ -163,6 +163,7 @@ def organize_by_condition(years):
               f"{int(row['over_30_ppr_count'])} over 30 | "
               f"{int(row['under_5_ppr_count'])} under 5, {int(row['under_10_ppr_count'])} under 10, "
               f"{int(row['under_15_ppr_count'])} under 15")
+        print("---------------------------------------------------------------")
 
     return merged
     # ---------------------- Display Cleanup Logic for UI ----------------------

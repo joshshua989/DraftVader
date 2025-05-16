@@ -1,24 +1,25 @@
-# ---------------------- Libraries ----------------------
+# ---------------------- LIBRARIES ----------------------
 import os
 import streamlit as st
 import psutil
 import signal
 import math
+from load_data import load_nfl_player_data
 from load_data import get_adp_data, get_season_projections_qb, get_season_projections_rb, get_season_projections_wr
 from load_data import get_season_projections_te, get_season_projections_k, get_season_projections_dst
 import implied_points
 import boom_bust_profile
-# ---------------------- Libraries ----------------------
+# ---------------------- LIBRARIES ----------------------
 
 
-# ---------------------- Page Configuration ----------------------
+# ---------------------- PAGE CONFIGURATION ----------------------
 # Streamlit function call used to configure the page settings - sets up the page title and icon for the Streamlit app
 # This function call should be placed at the very beginning of your Streamlit script.
 st.set_page_config(
     page_title="DraftVader v1.0",
     page_icon="🤖"
 )
-# ---------------------- Page Configuration ----------------------
+# ---------------------- PAGE CONFIGURATION ----------------------
 
 
 # ---------------------- SHUTDOWN (Development) ----------------------
@@ -40,7 +41,7 @@ with col2:
 # ---------------------- SHUTDOWN (Development) ----------------------
 
 
-# ---------------------- Header ----------------------
+# ---------------------- HEADER ----------------------
 # Print styled header
 title = "🏈 DRAFT VADER 1.0" # 🗣
 st.markdown(
@@ -56,7 +57,8 @@ st.markdown("<p style='color: lightblue;'>🤖 "
             "<strong>"
                 "I will be your personal AI assistant for the draft!"
             "</strong></p>", unsafe_allow_html=True)
-# ---------------------- Header ----------------------
+st.write("---")
+# ---------------------- HEADER ----------------------
 
 
 # ---------------------- Initialize Session State ----------------------
@@ -181,14 +183,19 @@ def get_available_players(players_2025):
 # ---------------------- Script Functions ----------------------
 
 
-# ---------------------- Data Handling - BEGIN ----------------------
-# initialize session state variables to ensure they have default values before the user interacts with the app.
+# -------------------------------------------- DATA HANDLING - (BEGIN) --------------------------------------------
+# Initialize session state variables to ensure they have default values before the user interacts with the app.
 initialize_session_state()
 
-# Check if the Data Scraping message has been shown before printing to terminal
+# Check if the Data Scraping message has been shown before PRINTING MESSAGE TO TERMINAL
 if 'data_scraping_shown' not in st.session_state:
     print("\n////////// DATA SCRAPING //////////\n")
     st.session_state['data_scraping_shown'] = True
+
+# Scrape NFL Player data from Pro-Football-Reference.com
+# years = [2022, 2023, 2024]
+# for year in years:
+#     get_nfl_player_data(year, f"https://www.pro-football-reference.com/years/{year}/fantasy.htm")
 
 # calls load_adp_data() function and stores a list of dictionaries in the adp_rankings variable
 # [{'rank': rank, 'name': name, 'pos': pos, 'adp': adp}, ...]
@@ -212,10 +219,10 @@ season_projections_k = get_season_projections_k()
 # [{'team': team, 'sack': sack, 'int': int, 'fr': fr, 'ff': ff, 'td': td, 'safety': safety, 'pa': pa,
 #     'yds_agn': yds_agn, 'proj_points': proj_points}]
 season_projections_dst = get_season_projections_dst()
-# ---------------------- Data Handling - BEGIN ----------------------
+# -------------------------------------------- DATA HANDLING - (BEGIN) --------------------------------------------
 
 
-# ---------------------- Data Manipulation ----------------------
+# -------------------------------------------- DATA MANIPULATION --------------------------------------------
 # Filters the adp_rankings list of player dictionaries to create separate lists for each position (QB, RB, WR, TE).
 adp_data_qb = [player for player in adp_rankings if player.get("pos") == "QB"]
 adp_data_rb = [player for player in adp_rankings if player.get("pos") == "RB"]
@@ -234,6 +241,7 @@ implied_points_df_rb = implied_points.calculate_value_vs_adp("RB", adp_data_rb, 
 implied_points_df_wr = implied_points.calculate_value_vs_adp("WR", adp_data_wr, season_projections_wr)
 implied_points_df_te = implied_points.calculate_value_vs_adp("TE", adp_data_te, season_projections_te)
 
+st.markdown("---")
 # Check if the Boom-Bust message has been shown before printing to terminal
 if 'boom_bust_profile_shown' not in st.session_state:
     print("---------------------------------------------------------------")
@@ -243,10 +251,10 @@ if 'boom_bust_profile_shown' not in st.session_state:
 # Calculates the Boom-Bust profile for players based on a list of seasons, specifically for the year
 seasons = [2024]
 boom_bust_df = boom_bust_profile.organize_by_condition(seasons)
-# ---------------------- Data Manipulation ----------------------
+# -------------------------------------------- DATA MANIPULATION --------------------------------------------
 
 
-# ---------------------- User Interface ----------------------
+# -------------------------------------------- USER INTERFACE --------------------------------------------
 # Determines which team is currently making a draft pick in a snake draft format.
 team_picking_int = get_team_picking()
 
@@ -265,7 +273,8 @@ with st.sidebar:
     st.write(f"**Last Team:** {st.session_state.last_team}")
 
 # Display some styled and dynamic draft-related info in the Streamlit app.
-st.markdown("<h3 style='color: #00ab41;'>🚩 Let's Begin!</h3>", unsafe_allow_html=True) # 🛠
+st.markdown("---")
+st.markdown("<h3 style='color: #0098f5;'>🚩 Let's Begin!</h3>", unsafe_allow_html=True) # 🛠
 st.write("- Teams: 12 | Format: Snake, Full-PPR")
 st.write(f"- Round: {current_round}")
 st.markdown(
@@ -274,7 +283,7 @@ st.markdown(
 )
 
 # Uses Streamlit to display a subheader with the text "✅️ Pick Selection".
-st.markdown("<h3 style='color: #00ab41;'>✅ Pick Selection</h3>", unsafe_allow_html=True) # 🗳
+st.markdown("<h3 style='color: #0098f5;'>✅ Pick Selection</h3>", unsafe_allow_html=True) # 🗳
 
 st.markdown("<p style='color: lightblue;'>🤖 <strong>Please make the first pick!</strong></p>", unsafe_allow_html=True)
 
@@ -328,6 +337,7 @@ with col1:
         placeholder="--- Select Player ---"
     )
 
+# ---------------------- Player Overview ----------------------
 # Display player information when selected
 if player_choice:
     # Extract player name from the formatted string (e.g., "Ja'Marr Chase (WR)")
@@ -346,7 +356,7 @@ if player_choice:
 
     if player_info:
         st.markdown(
-            f"<h3 style='color: #0098f5;'>Player Information: {player_info['name']}</h3>",
+            f"<h3 style='color: #00ab41;'>Player Overview: {player_info['name']}</h3>",
             unsafe_allow_html=True
         )
 
@@ -415,9 +425,9 @@ if player_choice:
             st.write("Spike Week Score: Not available")
     else:
         st.write("Player not found.")
+# ---------------------- Player Overview ----------------------
 
-# ------------------------------------- CONTINUE -------------------------------------------
-
+# ---------------------- Draft Button ----------------------
 # Draft Buttons: Next Pick and Undo Last Pick
 if st.session_state.last_pick:
     st.success(f"✅ {st.session_state.last_pick} drafted to {st.session_state.last_team}!")
@@ -443,9 +453,41 @@ else:
                 st.rerun()
             else:
                 st.error("⚠️ Player already taken!")
+# ---------------------- Draft Button ----------------------
+
+# ---------------------- NFL Player Data - loaded from .csv files ----------------------
+# Check if the Boom-Bust message has been shown before printing to terminal
+if 'nfl_player_data_shown' not in st.session_state:
+    print("\n////////// NFL Player Data //////////\n")
+    st.session_state['nfl_player_data_shown'] = True
+
+# NFL Player Data
+st.markdown("---")
+st.subheader("📋 NFL Player Data")
+
+# Dropdown to select season
+selected_season = st.selectbox("Select Season:", ['2022', '2023', '2024'])
+
+# Set the directory where the data files are located
+data_folder = './'
+
+# Load the appropriate file based on season
+file_name = f"nfl_player_data_{selected_season}.csv"
+
+# Load and display the data
+data = load_nfl_player_data(data_folder, file_name)
+
+st.write(f"Displaying data for season: {selected_season}")
+
+# Display filtered data
+st.dataframe(data)
+# ---------------------- NFL Player Data - loaded from .csv files ----------------------
+
+# ---------------------- Draft Board & Rosters ----------------------
+st.markdown("---")
+st.subheader("📋 Draft Board & Rosters")
 
 # Draft Board Filters
-st.markdown("---")
 st.markdown("<div style='font-size:18px; font-weight:Medium;'>📋 Draft Board Filters</div>", unsafe_allow_html=True)
 
 col1, col2 = st.columns(2)
@@ -453,10 +495,9 @@ col1, col2 = st.columns(2)
 with col1:
     selected_team = st.selectbox("Filter by Team:", ["All"] + list(st.session_state.teams.keys()))
 with col2:
-    selected_position = st.selectbox("Filter by Position:", ["All"] + sorted(set(p['pos'] for p in available_players_list)))
+    st.write(f"Last Pick: {st.session_state.last_pick}")
 
 # Displaying Draft Board & Rosters
-st.subheader("📋 Draft Board & Rosters")
 teams = list(st.session_state.teams.items())
 if selected_team != "All":
     teams = [(selected_team, st.session_state.teams[selected_team])]
@@ -485,4 +526,6 @@ for i in range(0, len(teams), 4):
                                     unsafe_allow_html=True)
             else:
                 st.write("_No bench players yet._")
-# ---------------------- User Interface ----------------------
+# ---------------------- NFL player data loader from .csv files ----------------------
+
+# -------------------------------------------- USER INTERFACE --------------------------------------------

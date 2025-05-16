@@ -1,19 +1,38 @@
 # ---------------------- Libraries ----------------------
-import streamlit as st
+import os
 import re
+import pandas as pd
+import streamlit as st
 from scraper import load_adp_data, load_season_projections_qb, load_season_projections_rb, load_season_projections_wr
 from scraper import load_season_projections_te, load_season_projections_k, load_season_projections_dst
 # ---------------------- Libraries ----------------------
 
 
 # ---------------------- Data Handling Functions ----------------------
+# @st.cache_data
+# def get_nfl_player_data(year, url):
+#     print("---------------------------------------------------------------")
+#     print(f"⏳ Scraping {year} NFL Player Data from '{url}' ...")
+#     nfl_player_data = scrape_nfl_player_data(year, url)
+#     print(f"🧠 {year} NFL Player Data Loaded!\n")
+#     print("Data summary:")
+#     for player in nfl_player_data[:5]:
+#         print(player)
+#     print("---------------------------------------------------------------")
+#     return nfl_player_data
+
+# Load data from CSV files
+@st.cache_data
+def load_nfl_player_data(data_folder, file_name):
+    nfl_player_data = pd.read_csv(os.path.join(data_folder, file_name))
+    print("---------------------------------------------------------------")
+    print(nfl_player_data)
+    return nfl_player_data
+
 # Loads Average Draft Position (ADP) data from FantasyPros, processes it, and caches the result to improve performance.
 @st.cache_data # Subsequent calls with the same input will return the cached result instead of re-executing the function.
 def get_adp_data():
-    # Print to the console (or Streamlit’s log) the start of the data scraping process.
-    print("---------------------------------------------------------------")
     print("⏳ Scraping ADP data from 'https://www.fantasypros.com/nfl/adp/best-ball-overall.php' ...")
-    # Calls load_data.py function get_adp_data() to scrape ADP data from FantasyPros.
     # adp_data is a list of dictionaries where each dictionary contains data about a player.
     adp_data = load_adp_data()
     # Check if data is empty or None
@@ -23,11 +42,9 @@ def get_adp_data():
         # Use regular expression to capture the first part of the position (e.g., "QB", "RB", etc.)
         match = re.match(r"([A-Za-z]+)", player['pos'])
         # Uses the function get_primary_position() to standardize or clean up the player’s position field.
-        player['pos'] = match.group(1) if match else player['pos']  # Default to the original position if no match
-    # Print a message indicating that the ADP data has been successfully loaded.
+        player['pos'] = match.group(1) if match else player['pos']  # Default to the original position if no match=
     print("🧠 ADP data loaded!\n")
     print("Data summary:")
-    # Displays a preview of the first 5 player records.
     for player in adp_data[:5]:
         print(player)
     print("---------------------------------------------------------------")
