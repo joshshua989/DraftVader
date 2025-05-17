@@ -274,6 +274,11 @@ season_projections_te = get_season_projections_te('https://www.fantasypros.com/n
 # ---------------------- Player Transactions ----------------------
 
 # ---------------------- Player Transactions ----------------------
+
+# ---------------------- Season Schedule ----------------------
+
+# ---------------------- Season Schedule ----------------------
+
 # -------------------------------------------- DATA HANDLING - (BEGIN) --------------------------------------------
 
 
