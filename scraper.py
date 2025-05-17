@@ -107,11 +107,9 @@ def extract_player_info(player_info):
 
 
 # ---------------------- ADP Data ----------------------
-def load_adp_data():
+def load_adp_data(url):
     try:
         # URL of the FantasyPros Best Ball ADP page
-        url = 'https://www.fantasypros.com/nfl/adp/best-ball-overall.php'
-
         response = requests.get(url)
         soup = BeautifulSoup(response.text, 'html.parser')
 
@@ -151,6 +149,9 @@ def load_adp_data():
         # Drop rows with missing essential values
         df = df.dropna(subset=['name', 'adp'])
 
+        # Filter out defenses (DST)
+        df = df[~df['pos'].str.contains('DST', na=False)]
+
         # Sort by fantasy points descending
         df = df.sort_values(by='rank', ascending=True)
 
@@ -166,9 +167,7 @@ def load_adp_data():
 
 
 # ---------------------- QB Season Projections ----------------------
-def load_season_projections_qb():
-    url = 'https://www.fantasypros.com/nfl/projections/qb.php?week=draft'
-
+def load_season_projections_qb(url):
     # Fetch the page content
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -235,9 +234,7 @@ def load_season_projections_qb():
 
 
 # ---------------------- RB Season Projections ----------------------
-def load_season_projections_rb():
-    url = 'https://www.fantasypros.com/nfl/projections/rb.php?week=draft&scoring=PPR&week=draft'
-
+def load_season_projections_rb(url):
     # Fetch the page content
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -300,9 +297,7 @@ def load_season_projections_rb():
 
 
 # ---------------------- WR Season Projections ----------------------
-def load_season_projections_wr():
-    url = 'https://www.fantasypros.com/nfl/projections/wr.php?week=draft&scoring=PPR&week=draft'
-
+def load_season_projections_wr(url):
     # Fetch the page content
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -365,9 +360,7 @@ def load_season_projections_wr():
 
 
 # ---------------------- TE Season Projections ----------------------
-def load_season_projections_te():
-    url = 'https://www.fantasypros.com/nfl/projections/te.php?week=draft&scoring=PPR&week=draft'
-
+def load_season_projections_te(url):
     # Fetch the page content
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -424,114 +417,110 @@ def load_season_projections_te():
 
 
 # ---------------------- K Season Projections ----------------------
-def load_season_projections_k():
-    url = 'https://www.fantasypros.com/nfl/projections/k.php?week=draft'
-
-    # Fetch the page content
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'html.parser')
-
-    # Locate the table containing the QB projections
-    table = soup.find('table', {'id': 'data'})
-
-    players = []
-
-    # NFL team abbreviations
-    team_abbr = ['ARI', 'ATL', 'BAL', 'BUF', 'CAR', 'CHI', 'CIN', 'CLE', 'DAL', 'DEN', 'DET', 'GB', 'HOU', 'IND', 'JAX',
-                 'KC', 'LV', 'LAC', 'LAR', 'MIA', 'MIN', 'NE', 'NO', 'NYG', 'NYJ', 'PHI', 'PIT', 'SF', 'SEA', 'TB', 'TEN', 'WAS']
-
-    for row in table.tbody.find_all('tr'):
-        cols = row.find_all('td')
-        if len(cols) > 1:
-            player_info = cols[0].text.strip()
-            fg = cols[1].text.strip()
-            fga = cols[2].text.strip()
-            xpt = cols[3].text.strip()
-            proj_points = cols[4].text.strip()
-
-            # Extract player name and team from player_info
-            player_name_parts = player_info.split()
-            team = player_name_parts[-1] if player_name_parts[-1] in team_abbr else ''
-            name = ' '.join(player_name_parts[:-1]) if team else player_info
-
-            players.append({
-                'name': name,
-                'team': team,
-                'fg': fg,
-                'fga': fga,
-                'xpt': xpt,
-                'proj_points': proj_points
-            })
-
-    # Convert to DataFrame
-    df = pd.DataFrame(players)
-
-    # Normalize numeric columns
-    for col in ['fg', 'fga', 'xpt', 'proj_points']:
-        df[col] = pd.to_numeric(df[col], errors='coerce')
-
-    # Drop rows with missing essential values
-    df = df.dropna(subset=['name', 'proj_points'])
-
-    # Sort by fantasy points descending
-    df = df.sort_values(by='proj_points', ascending=False)
-
-    return df.to_dict(orient='records')
+# def load_season_projections_k(url):
+#     # Fetch the page content
+#     response = requests.get(url)
+#     soup = BeautifulSoup(response.text, 'html.parser')
+#
+#     # Locate the table containing the QB projections
+#     table = soup.find('table', {'id': 'data'})
+#
+#     players = []
+#
+#     # NFL team abbreviations
+#     team_abbr = ['ARI', 'ATL', 'BAL', 'BUF', 'CAR', 'CHI', 'CIN', 'CLE', 'DAL', 'DEN', 'DET', 'GB', 'HOU', 'IND', 'JAX',
+#                  'KC', 'LV', 'LAC', 'LAR', 'MIA', 'MIN', 'NE', 'NO', 'NYG', 'NYJ', 'PHI', 'PIT', 'SF', 'SEA', 'TB', 'TEN', 'WAS']
+#
+#     for row in table.tbody.find_all('tr'):
+#         cols = row.find_all('td')
+#         if len(cols) > 1:
+#             player_info = cols[0].text.strip()
+#             fg = cols[1].text.strip()
+#             fga = cols[2].text.strip()
+#             xpt = cols[3].text.strip()
+#             proj_points = cols[4].text.strip()
+#
+#             # Extract player name and team from player_info
+#             player_name_parts = player_info.split()
+#             team = player_name_parts[-1] if player_name_parts[-1] in team_abbr else ''
+#             name = ' '.join(player_name_parts[:-1]) if team else player_info
+#
+#             players.append({
+#                 'name': name,
+#                 'team': team,
+#                 'fg': fg,
+#                 'fga': fga,
+#                 'xpt': xpt,
+#                 'proj_points': proj_points
+#             })
+#
+#     # Convert to DataFrame
+#     df = pd.DataFrame(players)
+#
+#     # Normalize numeric columns
+#     for col in ['fg', 'fga', 'xpt', 'proj_points']:
+#         df[col] = pd.to_numeric(df[col], errors='coerce')
+#
+#     # Drop rows with missing essential values
+#     df = df.dropna(subset=['name', 'proj_points'])
+#
+#     # Sort by fantasy points descending
+#     df = df.sort_values(by='proj_points', ascending=False)
+#
+#     return df.to_dict(orient='records')
 # ---------------------- K Season Projections ----------------------
 
 
 # ---------------------- DST Season Projections ----------------------
-def load_season_projections_dst():
-    url = 'https://www.fantasypros.com/nfl/projections/dst.php?week=draft'
-
-    # Fetch the page content
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'html.parser')
-
-    # Locate the table containing the QB projections
-    table = soup.find('table', {'id': 'data'})
-
-    teams = []
-
-    for row in table.tbody.find_all('tr'):
-        cols = row.find_all('td')
-        if len(cols) > 1:
-            team = cols[0].text.strip()
-            sack = cols[1].text.strip()
-            int = cols[2].text.strip()
-            fr = cols[3].text.strip()
-            ff = cols[4].text.strip()
-            td = cols[5].text.strip()
-            safety = cols[6].text.strip()
-            pa = cols[7].text.strip()
-            yds_agn = cols[8].text.strip()
-            proj_points = cols[9].text.strip()
-
-            teams.append({
-                'name': team,
-                'sack': sack,
-                'int': int,
-                'fr': fr,
-                'ff': ff,
-                'td': td,
-                'safety': safety,
-                'pa': pa,
-                'yds_agn': yds_agn,
-                'proj_points': proj_points
-            })
-
-    # Convert to DataFrame
-    df = pd.DataFrame(teams)
-
-    # Normalize numeric columns
-    for col in ['sack', 'int', 'fr', 'ff', 'td', 'safety',  'pa', 'proj_points']:
-        df[col] = pd.to_numeric(df[col], errors='coerce')
-
-    # Drop rows with missing essential values
-    df = df.dropna(subset=['name', 'proj_points'])
-
-    # Sort by fantasy points descending
-    df = df.sort_values(by='proj_points', ascending=False)
-
-    return df.to_dict(orient='records')
+# def load_season_projections_dst(url):
+#     # Fetch the page content
+#     response = requests.get(url)
+#     soup = BeautifulSoup(response.text, 'html.parser')
+#
+#     # Locate the table containing the QB projections
+#     table = soup.find('table', {'id': 'data'})
+#
+#     teams = []
+#
+#     for row in table.tbody.find_all('tr'):
+#         cols = row.find_all('td')
+#         if len(cols) > 1:
+#             team = cols[0].text.strip()
+#             sack = cols[1].text.strip()
+#             int = cols[2].text.strip()
+#             fr = cols[3].text.strip()
+#             ff = cols[4].text.strip()
+#             td = cols[5].text.strip()
+#             safety = cols[6].text.strip()
+#             pa = cols[7].text.strip()
+#             yds_agn = cols[8].text.strip()
+#             proj_points = cols[9].text.strip()
+#
+#             teams.append({
+#                 'name': team,
+#                 'sack': sack,
+#                 'int': int,
+#                 'fr': fr,
+#                 'ff': ff,
+#                 'td': td,
+#                 'safety': safety,
+#                 'pa': pa,
+#                 'yds_agn': yds_agn,
+#                 'proj_points': proj_points
+#             })
+#
+#     # Convert to DataFrame
+#     df = pd.DataFrame(teams)
+#
+#     # Normalize numeric columns
+#     for col in ['sack', 'int', 'fr', 'ff', 'td', 'safety',  'pa', 'proj_points']:
+#         df[col] = pd.to_numeric(df[col], errors='coerce')
+#
+#     # Drop rows with missing essential values
+#     df = df.dropna(subset=['name', 'proj_points'])
+#
+#     # Sort by fantasy points descending
+#     df = df.sort_values(by='proj_points', ascending=False)
+#
+#     return df.to_dict(orient='records')
 # ---------------------- DST Season Projections ----------------------

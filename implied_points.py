@@ -58,8 +58,8 @@ def calculate_value_vs_adp(position, adp, projected_fpts):
     plt.legend()
 
     # Display the scatter plot graphs
-    st.markdown(f"<p style='color: lightblue;'>🤖 <strong>{position} Value vs. ADP Analysis:</strong></p>", unsafe_allow_html=True)
-    st.pyplot(plt.gcf()) # Display the plot in Streamlit
+    st.pyplot(plt.gcf())  # Display the plot in Streamlit
+    st.markdown(f"<p style='color: lightblue;'>🤖 <strong>Scatter Plot: Regression Analysis - 2025 Projected Points vs. ADP ({position})</strong></p>", unsafe_allow_html=True)
 
     data['value_vs_adp'] = y - data['implied_points']
 

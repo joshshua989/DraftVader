@@ -1,12 +1,12 @@
 # ---------------------- LIBRARIES ----------------------
 import os
-import streamlit as st
 import psutil
 import signal
 import math
-from load_data import load_nfl_player_data
-from load_data import get_adp_data, get_season_projections_qb, get_season_projections_rb, get_season_projections_wr
-from load_data import get_season_projections_te, get_season_projections_k, get_season_projections_dst
+import pandas as pd
+import streamlit as st
+from load_data import load_nfl_player_data, get_adp_data, get_season_projections_qb, get_season_projections_rb
+from load_data import get_season_projections_wr, get_season_projections_te
 import implied_points
 import boom_bust_profile
 # ---------------------- LIBRARIES ----------------------
@@ -41,26 +41,6 @@ with col2:
 # ---------------------- SHUTDOWN (Development) ----------------------
 
 
-# ---------------------- HEADER ----------------------
-# Print styled header
-title = "🏈 DRAFT VADER 1.0" # 🗣
-st.markdown(
-        f"<h1 style='text-align: center; font-size: 48px; color: #0098f5;'>{title}</h1>",
-        unsafe_allow_html=True
-    )
-st.write("")
-st.markdown("<p style='color: lightblue;'>🤖 "
-            "<strong>"
-                "Welcome to NFL Best Ball Draft 2025!"
-            "</strong></p>", unsafe_allow_html=True)
-st.markdown("<p style='color: lightblue;'>🤖 "
-            "<strong>"
-                "I will be your personal AI assistant for the draft!"
-            "</strong></p>", unsafe_allow_html=True)
-st.write("---")
-# ---------------------- HEADER ----------------------
-
-
 # ---------------------- Initialize Session State ----------------------
 # function to initialize the session state variables
 def initialize_session_state():
@@ -85,6 +65,39 @@ def initialize_session_state():
 
 
 # ---------------------- Style ----------------------
+def apply_df_scrollbar_style():
+    # Inject custom CSS for a high-contrast scrollbar
+    st.markdown("""
+        <style>
+        /* Make the scrollbar wider */
+        ::-webkit-scrollbar {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Track */
+        ::-webkit-scrollbar-track {
+            background: #333;  /* Dark background for contrast */
+        }
+
+        /* Handle */
+        ::-webkit-scrollbar-thumb {
+            background: #555;  /* Medium gray for visibility */
+            border-radius: 10px;
+            border: 3px solid #222;  /* Darker border for separation */
+        }
+
+        /* Handle on hover */
+        ::-webkit-scrollbar-thumb:hover {
+            background: #777;  /* Slightly lighter for hover effect */
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    
+# Define a function to format text with larger font size and bold label
+def format_player_overview_stat(label, value):
+    return f"<p style='font-size:16px; font-weight:bold;'>{label}:</p> <p style='font-size:14px;'>{value}</p>"
+
 # customizes the visual appearance of all select boxes in the app by injecting CSS through the st.markdown() function.
 def apply_selectbox_style():
     st.markdown( # Uses st.markdown() to insert raw HTML and CSS.
@@ -103,7 +116,25 @@ def apply_selectbox_style():
         """,
         unsafe_allow_html=True # enable HTML rendering, which is disabled by default for security reasons.
     )
-# ---------------------- Style ----------------------
+# ---------------------- Style Functions ----------------------
+
+
+# ---------------------- HEADER ----------------------
+# Print styled header
+title = "🏈 DRAFT VADER 1.0" # 🗣
+st.markdown(
+        f"<h1 style='text-align: center; font-size: 48px; color: #0098f5;'>{title}</h1>",
+        unsafe_allow_html=True
+    )
+st.write("")
+st.markdown("<p style='color: lightblue;'>🤖 "
+            "<strong>"
+                "Welcome to NFL Best Ball Draft 2025!"
+            "</strong></p>", unsafe_allow_html=True)
+st.markdown("<p style='color: lightblue;'>🤖 "
+            "<strong>I will be your personal AI assistant for the draft!</strong></p>", unsafe_allow_html=True)
+st.write("---")
+# ---------------------- HEADER ----------------------
 
 
 # ---------------------- Button Callbacks ----------------------
@@ -174,7 +205,6 @@ def get_available_players(players_2025):
         [p for p in players_2025 if p['name'] not in taken],
         key=lambda x: x['adp'], reverse=True
     )
-
     # Example: If there are 4 teams (pick_order = [A, B, C, D]):
     # Round 1 (even): A -> B -> C -> D
     # Round 2 (odd): D -> C -> B -> A
@@ -197,29 +227,55 @@ if 'data_scraping_shown' not in st.session_state:
 # for year in years:
 #     get_nfl_player_data(year, f"https://www.pro-football-reference.com/years/{year}/fantasy.htm")
 
+# ---------------------- NFL Player Data CSV Files ----------------------
+# Load the 2024 NFL Player data CSV file
+nfl_player_data_2024 = pd.read_csv('nfl_player_data_2024.csv')
+# Remove + and * from player names
+nfl_player_data_2024['player'] = nfl_player_data_2024['player'].str.replace(r'[\+\*]', '', regex=True)
+
+# Load the 2023 NFL Player data CSV file
+nfl_player_data_2023 = pd.read_csv('nfl_player_data_2023.csv')
+# Remove + and * from player names
+nfl_player_data_2023['player'] = nfl_player_data_2023['player'].str.replace(r'[\+\*]', '', regex=True)
+
+# Load the 2022 NFL Player data CSV file
+nfl_player_data_2022 = pd.read_csv('nfl_player_data_2022.csv')
+# Remove + and * from player names
+nfl_player_data_2022['player'] = nfl_player_data_2022['player'].str.replace(r'[\+\*]', '', regex=True)
+# ---------------------- NFL Player Data CSV Files ----------------------
+
+# ---------------------- ADP Rankings ----------------------
 # calls load_adp_data() function and stores a list of dictionaries in the adp_rankings variable
 # [{'rank': rank, 'name': name, 'pos': pos, 'adp': adp}, ...]
-adp_rankings = get_adp_data()
+adp_rankings = get_adp_data('https://www.fantasypros.com/nfl/adp/best-ball-overall.php')
+# ---------------------- ADP Rankings ----------------------
 
+# ---------------------- Season Projections ----------------------
 # [{'name': name, 'team': team, 'pass_att': pass_att, 'pass_cmp': pass_cmp, 'pass_yds': pass_yds, 'pass_tds': pass_tds,
 #     'ints': ints, 'rush_att': rush_att, 'rush_yds': rush_yds, 'rush_tds': rush_tds, 'fumbles': fumbles,
 #     'proj_points': proj_points}]
-season_projections_qb = get_season_projections_qb()
+season_projections_qb = get_season_projections_qb('https://www.fantasypros.com/nfl/projections/qb.php?week=draft')
 # [{'name': name, 'team': team, 'rush_att': rush_att, 'rush_yds': rush_yds, 'rush_tds': rush_tds, 'rec': rec,
 #     'rec_yds': rec_yds, 'rec_tds': rec_tds, 'fumbles': fumbles, 'proj_points': proj_points}]
-season_projections_rb = get_season_projections_rb()
+season_projections_rb = get_season_projections_rb('https://www.fantasypros.com/nfl/projections/rb.php?week=draft&scoring=PPR&week=draft')
 # [{'name': name, 'team': team, 'rec': rec, 'rec_yds': rec_yds, 'rec_tds': rec_tds, 'rush_att': rush_att,
 #     'rush_yds': rush_yds, 'rush_tds': rush_tds, 'fumbles': fumbles, 'proj_points': proj_points}]
-season_projections_wr = get_season_projections_wr()
+season_projections_wr = get_season_projections_wr('https://www.fantasypros.com/nfl/projections/wr.php?week=draft&scoring=PPR&week=draft')
 # [{'name': name, 'team': team, 'rec': rec, 'rec_yds': rec_yds, 'rec_tds': rec_tds, 'fumbles': fumbles,
 #     'proj_points': proj_points}]
-season_projections_te = get_season_projections_te()
-# [{'name': name, 'team': team, 'fg': fg, 'fga': fga, 'xpt': xpt, 'proj_points': proj_points}]
-season_projections_k = get_season_projections_k()
-# [{'team': team, 'sack': sack, 'int': int, 'fr': fr, 'ff': ff, 'td': td, 'safety': safety, 'pa': pa,
-#     'yds_agn': yds_agn, 'proj_points': proj_points}]
-season_projections_dst = get_season_projections_dst()
+season_projections_te = get_season_projections_te('https://www.fantasypros.com/nfl/projections/te.php?week=draft&scoring=PPR&week=draft')
+# # [{'name': name, 'team': team, 'fg': fg, 'fga': fga, 'xpt': xpt, 'proj_points': proj_points}]
+# season_projections_k = get_season_projections_k('https://www.fantasypros.com/nfl/projections/k.php?week=draft')
+# # [{'team': team, 'sack': sack, 'int': int, 'fr': fr, 'ff': ff, 'td': td, 'safety': safety, 'pa': pa,
+# #     'yds_agn': yds_agn, 'proj_points': proj_points}]
+# season_projections_dst = get_season_projections_dst()
+# ---------------------- Season Projections ----------------------
 # -------------------------------------------- DATA HANDLING - (BEGIN) --------------------------------------------
+
+
+# -------------------------------------------- SET STYLES --------------------------------------------
+apply_df_scrollbar_style()
+# -------------------------------------------- SET STYLES --------------------------------------------
 
 
 # -------------------------------------------- DATA MANIPULATION --------------------------------------------
@@ -234,19 +290,33 @@ if 'value_vs_adp_shown' not in st.session_state:
     print("\n////////// VALUE VS. ADP - to gauge value picks. //////////\n")
     st.session_state['value_vs_adp_shown'] = True
 
+st.subheader("📊 Analytics Dashboard")
+
 # Calculates the implied points vs. ADP for each position (QB, RB, WR, TE) using a function called
 # calculate_value_vs_adp() from the implied_points module.
 implied_points_df_qb = implied_points.calculate_value_vs_adp("QB", adp_data_qb, season_projections_qb)
+
+st.markdown("---")
+
 implied_points_df_rb = implied_points.calculate_value_vs_adp("RB", adp_data_rb, season_projections_rb)
+
+st.markdown("---")
+
 implied_points_df_wr = implied_points.calculate_value_vs_adp("WR", adp_data_wr, season_projections_wr)
+
+st.markdown("---")
+
 implied_points_df_te = implied_points.calculate_value_vs_adp("TE", adp_data_te, season_projections_te)
 
 st.markdown("---")
+
 # Check if the Boom-Bust message has been shown before printing to terminal
 if 'boom_bust_profile_shown' not in st.session_state:
     print("---------------------------------------------------------------")
     print("\n////////// BOOM-BUST PROFILE -- prioritize spike-week players. //////////\n")
     st.session_state['boom_bust_profile_shown'] = True
+
+st.subheader("📈 Spike Week Score")
 
 # Calculates the Boom-Bust profile for players based on a list of seasons, specifically for the year
 seasons = [2024]
@@ -255,6 +325,101 @@ boom_bust_df = boom_bust_profile.organize_by_condition(seasons)
 
 
 # -------------------------------------------- USER INTERFACE --------------------------------------------
+
+# ---------------------- NFL Player Data - loaded from .csv files ----------------------
+# Check if the Boom-Bust message has been shown before printing to terminal
+if 'nfl_player_data_shown' not in st.session_state:
+    print("\n////////// NFL Player Data //////////\n")
+    st.session_state['nfl_player_data_shown'] = True
+
+# NFL Player Data
+st.markdown("---")
+st.subheader("📋 NFL Player Data")
+
+# Create four columns
+col1, col2, col3, col4 = st.columns(4)
+
+# Add the text input to the first column
+with col1:
+    # The specific selectbox
+    selected_season = st.selectbox("Select Season:", ['2024', '2023', '2022'])
+
+# Leave the other three columns blank
+with col2:
+    st.empty()
+with col3:
+    st.empty()
+with col4:
+    st.empty()
+
+# Set the directory where the data files are located
+data_folder = './'
+
+# Load the appropriate file based on season
+file_name = f"nfl_player_data_{selected_season}.csv"
+
+# Load and display the data
+data = load_nfl_player_data(data_folder, file_name)
+
+st.markdown(f"<p style='color: lightblue;'>🤖 "
+            f"<strong>Displaying historical data for season: {selected_season}"
+            f"</strong></p>", unsafe_allow_html=True)
+st.write("")
+
+# Display filtered data
+display_headers = {
+    'rank': 'Rank', 'player': 'Player', 'team': 'Team', 'pos': 'Pos', 'age': 'Age', 'games': 'Games',
+    'games_started': 'Started', 'cmp': 'CMP', 'pass_att': 'Pass Att', 'pass_yds': 'Pass Yds', 'pass_td': 'Pass TDs',
+    'int': 'Int', 'rush_att': 'Rush Att', 'rush_yds': 'Rush Yds', 'yds_per_att': 'Yds/Att', 'rush_td': 'Rush TDs',
+    'tgt': 'Tgts', 'rec': 'Rec', 'rec_yds': 'Rec Yds', 'yds_per_rec': 'Yds/Rec', 'rec_td': 'Rec TDs', 'fmb': 'Fmb',
+    'fmb_lost': 'Fmb Lost', 'total_td': 'Ttl TDs', 'two_pt_made': '2-Pt Made', 'two_pt_pass': '2-Pt Pass',
+    'fantasy_pts': 'Fantasy Pts', 'ppr_pts': 'PPR Pts', 'draftkings_pts': 'DK Pts', 'fanduel_pts': 'FD Pts',
+    'value_based_draft': 'Value Based Draft', 'pos_rank': 'Pos Rank', 'ovr_rank': 'Ovr Rank'
+}
+
+# Rename columns for display
+data = data.rename(columns=display_headers)
+
+# Create four columns
+col1, col2, col3 = st.columns(3)
+
+isResults = False
+
+with col1:
+    # Search for a player by name (example: 'Jared Goff')
+    if data is not None:
+        # Applying the CSS class to the text input
+        player_name = st.text_input("Search for NFL players by name:", key="player_name",
+                                    placeholder="Enter player name")
+
+        if player_name:  # Only execute when input is not empty
+            try:
+                # Filter the DataFrame for rows where the player name contains the search term (case-insensitive)
+                results = data[data['Player'].str.contains(player_name, case=False, na=False)]
+                if not results.empty:
+                    isResults = True
+                else:
+                    st.warning(f"No results found for '{player_name}'.")
+            except KeyError:
+                st.warning("The 'Player' column is not found in the data.")
+
+# Leave the other two columns blank
+with col2:
+    st.empty()
+with col3:
+    st.empty()
+
+if isResults:
+    st.write(f"Found {len(results)} result(s) for '{player_name}':")
+    st.dataframe(results)
+
+# Display filtered data
+st.dataframe(data)
+
+st.markdown('<p style="font-size:13px;">(*) Selected to Pro Bowl, (+) First-Team All-Pro</p>', unsafe_allow_html=True)
+# ---------------------- NFL Player Data - loaded from .csv files ----------------------
+
+# ---------------------- Draft Controller ----------------------
 # Determines which team is currently making a draft pick in a snake draft format.
 team_picking_int = get_team_picking()
 
@@ -310,7 +475,7 @@ formatted_players = [
 # Places the following UI elements inside col2.
 with col2:
     # Creates a list called valid_positions that contains the valid positions available for filtering
-    valid_positions = ["All", "QB", "RB", "WR", "TE", "K", "DST"]
+    valid_positions = ["All", "QB", "RB", "WR", "TE"]
     # Creates a sorted list of player positions from the available players and combines it with a default "All" option.
     primary_positions = sorted(set(p['pos'] for p in available_players_list))
     position_filter_options = ["All"] + [pos for pos in primary_positions if pos in valid_positions]
@@ -336,6 +501,7 @@ with col1:
         index=None,
         placeholder="--- Select Player ---"
     )
+# ---------------------- Draft Controller ----------------------
 
 # ---------------------- Player Overview ----------------------
 # Display player information when selected
@@ -360,72 +526,234 @@ if player_choice:
             unsafe_allow_html=True
         )
 
-        code_text = '''
-        Player Overview:
-        '''
-        st.markdown(f"```python\n{code_text}\n```")
+        # Create three columns
+        col1, col2, col3, = st.columns(3)
 
-        st.write(f"ADP: {player_info['adp']}")
-        st.write(f"Team: {player_info['team']}")
-        st.write(f"Position: {player_info['pos']}")
+        # ---------------------- Player Overview - Column 1.1 ----------------------
+        with col1:
+            code_text = '''
+                    Player Overview:
+                    '''
+            st.markdown(f"```python\n{code_text}\n```")
 
-        # Display bye week, handling cases where the value is NaN
-        if player_info['bye_week'] is not None and not math.isnan(player_info['bye_week']):
-            st.write(f"Bye Week: {int(player_info['bye_week'])}")
-        else:
-            st.write("Bye Week: Not available")
+            st.write(f"ADP: {player_info['adp']}")
+            st.write(f"Team: {player_info['team']}")
+            st.write(f"Position: {player_info['pos']}")
 
-        code_text = '''
-        Value vs. ADP Analysis:
-        '''
-        st.markdown(f"```python\n{code_text}\n```")
+            # Display bye week, handling cases where the value is NaN
+            if player_info['bye_week'] is not None and not math.isnan(player_info['bye_week']):
+                st.write(f"Bye Week: {int(player_info['bye_week'])}")
+            else:
+                st.write("Bye Week: Not available")
+        # ---------------------- Player Overview - Column 1.1 ----------------------
 
-        # Retrieve implied points DataFrame based on position
-        implied_points_df = implied_points_dfs.get(player_info['pos'])
-        if implied_points_df is not None:
-            matched = implied_points_df.loc[
-                implied_points_df['name'] == player_info['name'],
-                ['proj_points', 'implied_points', 'value_vs_adp']
-            ]
-            if not matched.empty:
-                proj_points = matched['proj_points'].values[0]
-                implied_points = matched['implied_points'].values[0]
-                st.write(f"Projected Points: {proj_points:.2f}")
-                st.write(f"Implied Points: {implied_points:.2f}")
 
-                # Display value_vs_adp if available
-                if 'value_vs_adp' in matched.columns:
-                    value_vs_adp = matched['value_vs_adp'].values[0]
-                    sign = "+" if value_vs_adp > 0 else ""
-                    st.write(f"Value vs. ADP: {sign}{value_vs_adp:.2f}")
+        # ---------------------- Player Overview - Column 2.1 ----------------------
+        with col2:
+            code_text = '''
+                    Value vs. ADP Analysis:
+                    '''
+            st.markdown(f"```python\n{code_text}\n```")
+
+            # Retrieve implied points DataFrame based on position
+            implied_points_df = implied_points_dfs.get(player_info['pos'])
+            if implied_points_df is not None:
+                matched = implied_points_df.loc[
+                    implied_points_df['name'] == player_info['name'],
+                    ['proj_points', 'implied_points', 'value_vs_adp']
+                ]
+                if not matched.empty:
+                    proj_points = matched['proj_points'].values[0]
+                    implied_points = matched['implied_points'].values[0]
+                    st.write(f"Projected Points: {proj_points:.2f}")
+                    st.write(f"Implied Points: {implied_points:.2f}")
+
+                    # Display value_vs_adp if available
+                    if 'value_vs_adp' in matched.columns:
+                        value_vs_adp = matched['value_vs_adp'].values[0]
+                        sign = "+" if value_vs_adp > 0 else ""
+                        st.write(f"Value vs. ADP: {sign}{value_vs_adp:.2f}")
+                    else:
+                        st.write("Value vs. ADP: Not available")
+
                 else:
+                    st.write("Projected Points: Not available")
+                    st.write("Implied Points: Not available")
                     st.write("Value vs. ADP: Not available")
-
             else:
                 st.write("Projected Points: Not available")
                 st.write("Implied Points: Not available")
                 st.write("Value vs. ADP: Not available")
-        else:
-            st.write("Projected Points: Not available")
-            st.write("Implied Points: Not available")
-            st.write("Value vs. ADP: Not available")
+        # ---------------------- Player Overview - Column 2.1 ----------------------
 
+        # ---------------------- Player Overview - Column 3.1 ----------------------
+        with col3:
+            code_text = '''
+                    Spike Week Score:
+                    '''
+            st.markdown(f"```python\n{code_text}\n```")
+
+            # Retrieve spike_week_score from the boom_bust_df DataFrame
+            spike_week_score = boom_bust_df.loc[
+                boom_bust_df['player_display_name'] == player_info['name'], 'spike_week_score'
+            ]
+            if not spike_week_score.empty:
+                st.write(f"Spike Week Score: {spike_week_score.values[0]:.2f}")
+            else:
+                st.write("Spike Week Score: Not available")
+        # ---------------------- Player Overview - Column 3.1 ----------------------
+
+        # ---------------------- Player Overview - Column 1.2 ----------------------
+        # Player Overview - Column 1.2 - 2024 Regular Season Stats
+        st.write("")
         code_text = '''
-        Spike Week Score:
-        '''
+                                    2024 REG Stats:
+                                    '''
         st.markdown(f"```python\n{code_text}\n```")
 
-        # Retrieve spike_week_score from the boom_bust_df DataFrame
-        spike_week_score = boom_bust_df.loc[
-            boom_bust_df['player_display_name'] == player_info['name'], 'spike_week_score'
-        ]
-        if not spike_week_score.empty:
-            st.write(f"Spike Week Score: {spike_week_score.values[0]:.2f}")
+        # Variables to match
+        player_name = player_info['name']
+        team_name = player_info['team']
+        position_name = player_info['pos']
+
+        # Filter DataFrame based on all three conditions
+        matched_player = nfl_player_data_2024[(nfl_player_data_2024['player'] == player_name) &
+                                              (nfl_player_data_2024['pos'] == position_name)]
+
+        # Check if a match was found
+        if not matched_player.empty:
+            print("Match found:")
+            print(matched_player)
         else:
-            st.write("Spike Week Score: Not available")
+            print("No match found!")
+            print(f"player_info['name']: {player_info['name']}")
+            print(f"player_info['team']: {player_info['team']}")
+            print(f"player_info['pos']: {player_info['pos']}")
+        # ---------------------- Player Overview - Column 1.2 ----------------------
+
+        if not matched_player.empty:
+
+            # Create three columns
+            col1, col2, col3, = st.columns(3)
+
+            # ---------------------- Player Overview Column 1.3 ----------------------
+            with col1:
+                # Get the text value from the columns
+                st.markdown(format_player_overview_stat(
+                    "Rank", matched_player['rank'].values[0]), unsafe_allow_html=True
+                )
+                st.markdown(format_player_overview_stat(
+                    "Age", matched_player['age'].values[0]), unsafe_allow_html=True
+                )
+                st.markdown(format_player_overview_stat(
+                    "Games", matched_player['games'].values[0]), unsafe_allow_html=True
+                )
+                st.markdown(format_player_overview_stat(
+                    "Games Started", matched_player['games_started'].values[0]),  unsafe_allow_html=True
+                )
+
+                if matched_player['pos'].values[0] == "QB":
+                    st.markdown(format_player_overview_stat(
+                        "Completions", matched_player['cmp'].values[0]), unsafe_allow_html=True
+                    )
+                    st.markdown(format_player_overview_stat(
+                        "Pass Attempts", matched_player['pass_att'].values[0]), unsafe_allow_html=True
+                    )
+                    st.markdown(format_player_overview_stat(
+                        "Pass Yards", matched_player['pass_yds'].values[0]), unsafe_allow_html=True
+                    )
+                    st.markdown(format_player_overview_stat(
+                        "Pass TDs", matched_player['pass_td'].values[0]), unsafe_allow_html=True
+                    )
+                    st.markdown(format_player_overview_stat(
+                        "Interceptions", matched_player['int'].values[0]), unsafe_allow_html=True
+                    )
+
+                if matched_player['pos'].values[0] in ("QB", "RB", "WR"):
+                    st.markdown(format_player_overview_stat(
+                        "Rush Attempts", matched_player['rush_att'].values[0]), unsafe_allow_html=True
+                    )
+                    st.markdown(format_player_overview_stat(
+                        "Rush Yards", matched_player['rush_yds'].values[0]), unsafe_allow_html=True
+                    )
+                    st.markdown(format_player_overview_stat(
+                        "Yards/Att", matched_player['yds_per_att'].values[0]), unsafe_allow_html=True
+                    )
+                    st.markdown(format_player_overview_stat(
+                        "Rushing TDs", matched_player['rush_td'].values[0]), unsafe_allow_html=True
+                    )
+            # ---------------------- Player Overview Column 1.3 ----------------------
+
+            # ---------------------- Player Overview Column 2.3 ----------------------
+            with col2:
+                if matched_player['pos'].values[0] in ("QB", "RB", "WR", "TE"):
+                    st.markdown(format_player_overview_stat(
+                        "Targets", matched_player['tgt'].values[0]), unsafe_allow_html=True
+                    )
+                    st.markdown(format_player_overview_stat(
+                        "Receptions", matched_player['rec'].values[0]), unsafe_allow_html=True
+                    )
+                    st.markdown(format_player_overview_stat(
+                        "Receiving Yards", matched_player['rec_yds'].values[0]), unsafe_allow_html=True
+                    )
+                    st.markdown(format_player_overview_stat(
+                        "Yards/Rec", matched_player['yds_per_rec'].values[0]), unsafe_allow_html=True
+                    )
+                    st.markdown(format_player_overview_stat(
+                        "Receiving TDs", matched_player['rec_td'].values[0]), unsafe_allow_html=True
+                    )
+                    st.markdown(format_player_overview_stat(
+                        "Fumbles", matched_player['fmb'].values[0]), unsafe_allow_html=True
+                    )
+                    st.markdown(format_player_overview_stat(
+                        "Fumbles Lost", matched_player['fmb_lost'].values[0]), unsafe_allow_html=True
+                    )
+                    st.markdown(format_player_overview_stat(
+                        "Total TDs", matched_player['total_td'].values[0]), unsafe_allow_html=True
+                    )
+            # ---------------------- Player Overview Column 2.3 ----------------------
+
+            # ---------------------- Player Overview Column 3.3 ----------------------
+            with col3:
+                if matched_player['pos'].values[0] in ("QB", "RB", "WR", "TE"):
+                    st.markdown(format_player_overview_stat(
+                        "2PT Made", matched_player['two_pt_made'].values[0]), unsafe_allow_html=True
+                    )
+                    st.markdown(format_player_overview_stat(
+                        "2PT Pass", matched_player['two_pt_pass'].values[0]), unsafe_allow_html=True
+                    )
+                    st.markdown(format_player_overview_stat(
+                        "Fantasy Pts", matched_player['fantasy_pts'].values[0]), unsafe_allow_html=True
+                    )
+                    st.markdown(format_player_overview_stat(
+                        "PPR Pts", matched_player['ppr_pts'].values[0]), unsafe_allow_html=True
+                    )
+                    st.markdown(format_player_overview_stat(
+                        "DraftKings Pts", matched_player['draftkings_pts'].values[0]), unsafe_allow_html=True
+                    )
+                    st.markdown(format_player_overview_stat(
+                        "Fanduel Pts", matched_player['fanduel_pts'].values[0]), unsafe_allow_html=True
+                    )
+                    st.markdown(format_player_overview_stat(
+                        "Value Based Draft", matched_player['value_based_draft'].values[0]), unsafe_allow_html=True
+                    )
+                    st.markdown(format_player_overview_stat(
+                        "Position Rank", matched_player['pos_rank'].values[0]), unsafe_allow_html=True
+                    )
+                    st.markdown(format_player_overview_stat(
+                        "Overall Rank", matched_player['ovr_rank'].values[0]), unsafe_allow_html=True
+                    )
+            # ---------------------- Player Overview Column 3.3 ----------------------
+
+        # elif isRookie: TODO - Build out isRookie logic.
+        #     print("TODO - Build out college data logic.")
+        #     st.write("This player is a rookie. There is no historical professional overview.")
+        else:
+            st.write("Something went wrong. Is this player a rookie? Please try another player.")
+
     else:
-        st.write("Player not found.")
-# ---------------------- Player Overview ----------------------
+         st.write("Player not found.")
+    # ---------------------- Player Overview ----------------------
 
 # ---------------------- Draft Button ----------------------
 # Draft Buttons: Next Pick and Undo Last Pick
@@ -455,34 +783,6 @@ else:
                 st.error("⚠️ Player already taken!")
 # ---------------------- Draft Button ----------------------
 
-# ---------------------- NFL Player Data - loaded from .csv files ----------------------
-# Check if the Boom-Bust message has been shown before printing to terminal
-if 'nfl_player_data_shown' not in st.session_state:
-    print("\n////////// NFL Player Data //////////\n")
-    st.session_state['nfl_player_data_shown'] = True
-
-# NFL Player Data
-st.markdown("---")
-st.subheader("📋 NFL Player Data")
-
-# Dropdown to select season
-selected_season = st.selectbox("Select Season:", ['2022', '2023', '2024'])
-
-# Set the directory where the data files are located
-data_folder = './'
-
-# Load the appropriate file based on season
-file_name = f"nfl_player_data_{selected_season}.csv"
-
-# Load and display the data
-data = load_nfl_player_data(data_folder, file_name)
-
-st.write(f"Displaying data for season: {selected_season}")
-
-# Display filtered data
-st.dataframe(data)
-# ---------------------- NFL Player Data - loaded from .csv files ----------------------
-
 # ---------------------- Draft Board & Rosters ----------------------
 st.markdown("---")
 st.subheader("📋 Draft Board & Rosters")
@@ -490,12 +790,17 @@ st.subheader("📋 Draft Board & Rosters")
 # Draft Board Filters
 st.markdown("<div style='font-size:18px; font-weight:Medium;'>📋 Draft Board Filters</div>", unsafe_allow_html=True)
 
-col1, col2 = st.columns(2)
+# Create four columns
+col1, col2, col3 = st.columns(3)
 
 with col1:
     selected_team = st.selectbox("Filter by Team:", ["All"] + list(st.session_state.teams.keys()))
+
+# Leave the other two columns blank
 with col2:
-    st.write(f"Last Pick: {st.session_state.last_pick}")
+    st.empty()
+with col3:
+    st.empty()
 
 # Displaying Draft Board & Rosters
 teams = list(st.session_state.teams.items())
@@ -526,6 +831,6 @@ for i in range(0, len(teams), 4):
                                     unsafe_allow_html=True)
             else:
                 st.write("_No bench players yet._")
-# ---------------------- NFL player data loader from .csv files ----------------------
+# ---------------------- Draft Board & Rosters ----------------------
 
 # -------------------------------------------- USER INTERFACE --------------------------------------------

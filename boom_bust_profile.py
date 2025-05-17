@@ -113,13 +113,6 @@ def organize_by_condition(years):
     top_10 = merged.sort_values(by='spike_week_score', ascending=False).head(10)
 
     # ---------------------- Display Cleanup Logic for UI ----------------------
-    # Display the Spike Week Scores
-    st.write("")
-    st.markdown("<p style='color: lightblue;'>🤖 "
-                "<strong>"
-                    "All-Player 'Spike Week Score' Analysis:"
-                "</strong></p>", unsafe_allow_html=True)
-
     # Format the percentage columns for display
     formatted_merged = merged.copy()
     for col in formatted_merged.columns:
@@ -153,6 +146,9 @@ def organize_by_condition(years):
 
     # Display the formatted DataFrame
     st.write(display_df.sort_values(by='Spike Week Score', ascending=False))
+
+    st.markdown("<p style='color: lightblue;'>🤖 "
+                "<strong>DataFrame: All-Position 'Spike Week Score'</strong></p>", unsafe_allow_html=True)
 
     # Print the top 10 players with boom, bust, spike week scores, and total games played
     print("\nTop 10 Players by Spike Week Score:")
