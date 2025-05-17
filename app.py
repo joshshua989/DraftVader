@@ -270,6 +270,10 @@ season_projections_te = get_season_projections_te('https://www.fantasypros.com/n
 # #     'yds_agn': yds_agn, 'proj_points': proj_points}]
 # season_projections_dst = get_season_projections_dst()
 # ---------------------- Season Projections ----------------------
+
+# ---------------------- Player Transactions ----------------------
+
+# ---------------------- Player Transactions ----------------------
 # -------------------------------------------- DATA HANDLING - (BEGIN) --------------------------------------------
 
 
@@ -295,19 +299,12 @@ st.subheader("📊 Analytics Dashboard")
 # Calculates the implied points vs. ADP for each position (QB, RB, WR, TE) using a function called
 # calculate_value_vs_adp() from the implied_points module.
 implied_points_df_qb = implied_points.calculate_value_vs_adp("QB", adp_data_qb, season_projections_qb)
-
 st.markdown("---")
-
 implied_points_df_rb = implied_points.calculate_value_vs_adp("RB", adp_data_rb, season_projections_rb)
-
 st.markdown("---")
-
 implied_points_df_wr = implied_points.calculate_value_vs_adp("WR", adp_data_wr, season_projections_wr)
-
 st.markdown("---")
-
 implied_points_df_te = implied_points.calculate_value_vs_adp("TE", adp_data_te, season_projections_te)
-
 st.markdown("---")
 
 # Check if the Boom-Bust message has been shown before printing to terminal
