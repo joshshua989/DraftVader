@@ -112,44 +112,6 @@ def organize_by_condition(years):
     # Sort the merged dataframe by Spike Week Score in descending order
     top_10 = merged.sort_values(by='spike_week_score', ascending=False).head(10)
 
-    # ---------------------- Display Cleanup Logic for UI ----------------------
-    # Format the percentage columns for display
-    formatted_merged = merged.copy()
-    for col in formatted_merged.columns:
-        if '_ppr_percentage' in col:
-            formatted_merged[col] = formatted_merged[col].astype(str) + '%'
-
-    # Create a copy for display
-    display_df = formatted_merged.copy()
-
-    # Define a dictionary to rename columns for display
-    rename_dict = {
-        'player_display_name': 'Player Name',
-        'spike_week_score': 'Spike Week Score',
-        'total_games': 'Total Games',
-        'over_30_ppr_count': '>30 Point Games',
-        'over_25_ppr_count': '>25 Point Games',
-        'over_20_ppr_count': '>20 Point Games',
-        'under_15_ppr_count': '<15 Point Games',
-        'under_10_ppr_count': '<10 Point Games',
-        'under_5_ppr_count': '<5 Point Games',
-        'over_30_ppr_percentage': '>30 PPR %',
-        'over_25_ppr_percentage': '>25 PPR %',
-        'over_20_ppr_percentage': '>20 PPR %',
-        'under_15_ppr_percentage': '<15 PPR %',
-        'under_10_ppr_percentage': '<10 PPR %',
-        'under_5_ppr_percentage': '<5 PPR %'
-    }
-
-    # Rename columns in the copy for display only
-    display_df.rename(columns=rename_dict, inplace=True)
-
-    # Display the formatted DataFrame
-    st.write(display_df.sort_values(by='Spike Week Score', ascending=False))
-
-    st.markdown("<p style='color: lightblue;'>🤖 "
-                "<strong>DataFrame: All-Position 'Spike Week Score'</strong></p>", unsafe_allow_html=True)
-
     # Print the top 10 players with boom, bust, spike week scores, and total games played
     print("\nTop 10 Players by Spike Week Score:")
     for index, row in top_10.iterrows():
@@ -162,6 +124,4 @@ def organize_by_condition(years):
         print("---------------------------------------------------------------")
 
     return merged
-    # ---------------------- Display Cleanup Logic for UI ----------------------
-
 # ---------------------- Organize by Condition Function ----------------------

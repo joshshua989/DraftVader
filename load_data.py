@@ -24,11 +24,11 @@ from scraper import load_season_projections_te
 # Load data from CSV files
 @st.cache_data
 def load_nfl_player_data(data_folder, file_name):
-    nfl_player_data = pd.read_csv(os.path.join(data_folder, file_name))
+    nfl_player_stats_df = pd.read_csv(os.path.join(data_folder, file_name))
     print("---------------------------------------------------------------")
-    print(nfl_player_data)
+    print(nfl_player_stats_df)
     print("")
-    return nfl_player_data
+    return nfl_player_stats_df
 
 # Loads Average Draft Position (ADP) data from FantasyPros, processes it, and caches the result to improve performance.
 @st.cache_data # Subsequent calls with the same input will return the cached result instead of re-executing the function.

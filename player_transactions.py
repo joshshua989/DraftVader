@@ -1,68 +1,85 @@
 import requests
+import streamlit as st
 from bs4 import BeautifulSoup
 import pandas as pd
 import re
 
-# URL of the transactions page
-url = "https://www.pro-football-reference.com/years/2025/05_transactions.htm"
+@st.cache_data
+def get_player_transactions(month, url):
+    """
+            Fetches and parses NFL player transactions from the specified URL.
 
-# Set headers to mimic a browser visit
-headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-}
+            Args:
+                month (str): Month for which transactions are being fetched (used for display context).
+                url (str): URL to the NFL transaction page.
 
-try:
-    # Send a GET request to the page
-    response = requests.get(url, headers=headers)
-    response.raise_for_status()
+            Returns:
+                pd.DataFrame: A DataFrame containing transaction dates and descriptions.
+            """
 
-    # Parse the HTML content
-    soup = BeautifulSoup(response.text, 'html.parser')
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+    }
 
-    # Locate the main content div where transactions are listed
-    content_div = soup.find('div', {'id': 'content'})
+    try:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
+        content_div = soup.find('div', {'id': 'content'})
 
-    # Initialize a list to store transactions
-    transactions = []
+        transactions = []
+        current_date = None
 
-    # Initialize current date to associate transactions with their respective dates
-    current_date = None
+        positions = [
+            "QB", "RB", "WR", "TE", "DT", "DE", "LB", "CB", "S",
+            "OT", "OG", "G", "C", "FB", "K", "P", "LS", "DL", "DB", "OL"
+        ]
 
-    # Common position abbreviations in NFL transactions
-    positions = [
-        "QB", "RB", "WR", "TE", "DT", "DE", "LB", "CB", "S",
-        "OT", "OG", "C", "FB", "K", "P", "LS", "DL", "DB", "OL"
-    ]
+        keywords = ["Signed", "Re-Signed", "Waived", "Claimed", "Released", "Activated", "Placed", "Traded"]
 
-    # Extract all relevant tags
-    for elem in content_div.find_all(['h2', 'p']):
-        text = elem.get_text(strip=True)
+        for elem in content_div.find_all(['h2', 'p']):
+            text = elem.get_text(strip=True)
 
-        # Check if the text is a date (format: Month Day, Year)
-        if re.match(r"^[A-Za-z]+\s\d{1,2},\s\d{4}$", text):
-            current_date = text
+            if re.match(r"^[A-Za-z]+\s\d{1,2},\s\d{4}$", text):
+                current_date = text
 
-        # Check for transaction keywords and a current date
-        elif current_date and any(word in text for word in ["signed", "waived", "claimed", "released"]):
-            # Fix team and transaction spacing issues
-            cleaned_text = re.sub(r'([a-z])([A-Z])', r'\1 \2', text)
+            elif current_date and any(word.lower() in text.lower() for word in keywords):
+                # Fix "TheBaltimore" → "The Baltimore"
+                text = re.sub(r'(The)([A-Z])', r'\1 \2', text)
 
-            # Fix player name and position spacing issues
-            for pos in positions:
-                # Separate the position from the player's name if stuck together
-                cleaned_text = re.sub(rf'({pos})([A-Z])', r'\1 \2', cleaned_text)
+                # Fix missing space between lowercase and keyword (e.g. "Ravenssigned")
+                for keyword in keywords:
+                    text = re.sub(rf'([a-z])({keyword})', r'\1 \2', text, flags=re.IGNORECASE)
 
-            # Append the date and transaction to the list
-            transactions.append({
-                'Date': current_date,
-                'Transaction': cleaned_text
-            })
+                # Fix position abbreviation glued to player name, excluding "CB"
+                for pos in positions:
+                    text = re.sub(rf'({pos})([A-Z])', r'\1 \2', text)
 
-    # Convert the list to a DataFrame
-    df = pd.DataFrame(transactions)
+                # Fix player last name glued to "to", "on", "from" but exclude "season"
+                # This avoids splitting "2025 season"
+                def fix_glued(match):
+                    word = match.group(2)
+                    if word.lower() == "season":
+                        return match.group(1) + word
+                    else:
+                        return match.group(1) + " " + word
 
-    # Display the cleaned DataFrame
-    print(df)
+                text = re.sub(r'([a-zA-Z])(?=(to|on|from|season)\b)', r'\1 ',
+                              text)  # add space before to/on/from/season first
+                # Then correct "season" back to no space (undo)
+                text = re.sub(r'([a-zA-Z])\s(season\b)', fix_glued, text, flags=re.IGNORECASE)
 
-except requests.RequestException as e:
-    print(f"Error while fetching the page: {e}")
+                # Fix "theTeam" → "the Team"
+                text = re.sub(r'\b(the)([A-Z])', r'\1 \2', text, flags=re.IGNORECASE)
+
+                transactions.append({
+                    'Date': current_date,
+                    'Transaction': text
+                })
+
+        df = pd.DataFrame(transactions)
+        return df
+
+    except requests.RequestException as e:
+        print(f"Error while fetching the page: {e}")
+        return pd.DataFrame()
