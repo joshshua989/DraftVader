@@ -25,6 +25,7 @@ with col4:
 
 # Check if the Boom-Bust message has been shown before printing to terminal
 if 'nfl_player_data_shown' not in st.session_state:
+    print("---------------------------------------------------------------")
     print(f"\n////////// {selected_season} NFL Player Data //////////\n")
     st.session_state['nfl_player_data_shown'] = True
 

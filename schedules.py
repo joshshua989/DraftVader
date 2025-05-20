@@ -11,6 +11,7 @@ def get_schedules(year, url):
 
     # Check if the message has been shown before printing to terminal
     if 'nfl_schedule_shown' not in st.session_state:
+        print("---------------------------------------------------------------")
         print(f"\n////////// {year} Season Schedule //////////\n")
         print("---------------------------------------------------------------")
         st.session_state['nfl_schedule_shown'] = True
@@ -46,6 +47,7 @@ def get_schedules(year, url):
 
     print("Data Summary:")
     print(df.head())
+    print("---------------------------------------------------------------")
 
     # # Save to CSV
     # df.to_csv(f"nfl_schedule_{year}.csv", index=False)

@@ -3,13 +3,12 @@ import os
 import psutil
 import signal
 import math
-from datetime import datetime
 import pandas as pd
 import streamlit as st
+import value_vs_adp
+import spike_week_score
 from load_data import get_adp_data, get_season_projections_qb, get_season_projections_rb
 from load_data import get_season_projections_wr, get_season_projections_te
-import spike_week_score
-from schedules import get_schedules
 # ---------------------- LIBRARIES ----------------------
 
 
@@ -354,6 +353,29 @@ st.session_state['season_projections_te'] = season_projections_te
 # #     'yds_agn': yds_agn, 'proj_points': proj_points}]
 # season_projections_dst = get_season_projections_dst()
 # ---------------------- Season Projections ----------------------
+
+# ---------------------- Value vs ADP DataFrame ----------------------
+# Calculates the implied points vs. ADP for each position (QB, RB, WR, TE) using a function called
+# calculate_value_vs_adp() from the implied_points module.
+value_vs_adp_df_qb = value_vs_adp.calculate_value_vs_adp("QB", adp_data_qb, season_projections_qb, False)
+value_vs_adp_df_rb = value_vs_adp.calculate_value_vs_adp("RB", adp_data_rb, season_projections_rb, False)
+value_vs_adp_df_wr = value_vs_adp.calculate_value_vs_adp("WR", adp_data_wr, season_projections_wr, False)
+value_vs_adp_df_te = value_vs_adp.calculate_value_vs_adp("TE", adp_data_te, season_projections_te, False)
+
+# Define a dictionary to map position to the corresponding value_vs_adp dataframe
+value_vs_adp_df = {
+    "QB": value_vs_adp_df_qb,
+    "RB": value_vs_adp_df_rb,
+    "WR": value_vs_adp_df_wr,
+    "TE": value_vs_adp_df_te
+}
+# ---------------------- Value vs ADP DataFrame ----------------------
+
+# ---------------------- Boom-Bust DataFrame ----------------------
+# Calculates the Boom-Bust DataFrame for players based on a list of seasons, specifically for the year
+seasons = [2024]
+boom_bust_df = spike_week_score.organize_by_condition(seasons)
+# ---------------------- Boom-Bust DataFrame ----------------------
 # -------------------------------------------- DATA HANDLING - (BEGIN) --------------------------------------------
 
 
@@ -455,14 +477,6 @@ if player_choice:
     # Find the player dictionary in the available_players_list
     player_info = next((p for p in available_players_list if p['name'] == selected_name), None)
 
-    # Define a dictionary to map position to the corresponding implied points DataFrame
-    implied_points_dfs = {
-        "QB": implied_points_df_qb,
-        "RB": implied_points_df_rb,
-        "WR": implied_points_df_wr,
-        "TE": implied_points_df_te
-    }
-
     if player_info:
         st.markdown(
             f"<h3 style='color: #00ab41;'>Player Overview: {player_info['name']}</h3>",
@@ -499,7 +513,7 @@ if player_choice:
             st.markdown(f"```python\n{code_text}\n```")
 
             # Retrieve implied points DataFrame based on position
-            implied_points_df = implied_points_dfs.get(player_info['pos'])
+            implied_points_df = value_vs_adp_df.get(player_info['pos'])
             if implied_points_df is not None:
                 matched = implied_points_df.loc[
                     implied_points_df['name'] == player_info['name'],
@@ -565,13 +579,28 @@ if player_choice:
 
         # Check if a match was found
         if not matched_player.empty:
-            print("Match found:")
-            print(matched_player)
+            print("---------------------------------------------------------------")
+            print("MATCH FOUND:\n")
+            headers = [
+                'rank', 'player', 'team', 'pos', 'age', 'games', 'games_started', 'cmp',
+                'pass_att', 'pass_yds', 'pass_td', 'int', 'rush_att', 'rush_yds', 'yds_per_att',
+                'rush_td', 'tgt', 'rec', 'rec_yds', 'yds_per_rec', 'rec_td', 'fmb', 'fmb_lost',
+                'total_td', 'two_pt_made', 'two_pt_pass', 'fantasy_pts', 'ppr_pts',
+                'draftkings_pts', 'fanduel_pts', 'value_based_draft', 'pos_rank', 'ovr_rank'
+            ]
+
+            for field in headers:
+                value = matched_player[field].values[0]
+                if value != 0:
+                    print(f"{matched_player[field].name.capitalize()}: {value}")
+            print("---------------------------------------------------------------")
         else:
-            print("No match found!")
+            print("---------------------------------------------------------------")
+            print("NO MATCH FOUND!")
             print(f"player_info['name']: {player_info['name']}")
             print(f"player_info['team']: {player_info['team']}")
             print(f"player_info['pos']: {player_info['pos']}")
+            print("---------------------------------------------------------------")
         # ---------------------- Player Overview - Column 1.2 ----------------------
 
         if not matched_player.empty:

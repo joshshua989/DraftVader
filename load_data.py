@@ -27,7 +27,7 @@ def load_nfl_player_data(data_folder, file_name):
     nfl_player_stats_df = pd.read_csv(os.path.join(data_folder, file_name))
     print("---------------------------------------------------------------")
     print(nfl_player_stats_df)
-    print("")
+    print("---------------------------------------------------------------")
     return nfl_player_stats_df
 
 # Loads Average Draft Position (ADP) data from FantasyPros, processes it, and caches the result to improve performance.
