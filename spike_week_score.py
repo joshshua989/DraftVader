@@ -56,7 +56,7 @@ def calculate_spike_score(row):
 # ---------------------- Script Functions ----------------------
 
 
-# ---------------------- Organize by Condition Function ----------------------
+# ---------------------- Organize by Condition ----------------------
 @st.cache_data
 def organize_by_condition(years):
     print("---------------------------------------------------------------")
@@ -126,4 +126,4 @@ def organize_by_condition(years):
         print("---------------------------------------------------------------")
 
     return merged
-# ---------------------- Organize by Condition Function ----------------------
+# ---------------------- Organize by Condition ----------------------

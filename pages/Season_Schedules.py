@@ -18,20 +18,20 @@ st.subheader(f"📅 {year} NFL Season Schedule")
 schedules_df = get_schedules(year, f"https://www.pro-football-reference.com/years/{year}/games.htm")
 
 # Rename columns to your standard names
-schedules_df.columns = ['Day', 'Date', 'VisTm', 'VisPts', 'At', 'HomeTm', 'HomePts', 'Time']
+schedules_df.columns = ['day', 'date', 'visitor_team', 'visitor_pts', 'at', 'home_team', 'home_pts', 'time']
 
 # Filter out rows where Week is NaN (preseason or malformed rows)
-schedules_df = schedules_df[schedules_df['Date'].notna()]
+schedules_df = schedules_df[schedules_df['date'].notna()]
 
 # Convert 'Date' to datetime format
-schedules_df['Date'] = pd.to_datetime(schedules_df['Date'] + f" {year}")
+schedules_df['date'] = pd.to_datetime(schedules_df['date'] + f" {year}")
 
 # Define week mapping based on date ranges
 week_map = [
-    ("Pre-season Week 1", datetime(2025, 7, 31), datetime(2025, 7, 31)),
-    ("Pre-season Week 2", datetime(2025, 8, 7), datetime(2025, 8, 10)),
-    ("Pre-season Week 3", datetime(2025, 8, 14), datetime(2025, 8, 18)),
-    ("Pre-season Week 4", datetime(2025, 8, 21), datetime(2025, 8, 23)),
+    ("Pre-Season Week 1", datetime(2025, 7, 31), datetime(2025, 7, 31)),
+    ("Pre-Season Week 2", datetime(2025, 8, 7), datetime(2025, 8, 10)),
+    ("Pre-Season Week 3", datetime(2025, 8, 14), datetime(2025, 8, 18)),
+    ("Pre-Season Week 4", datetime(2025, 8, 21), datetime(2025, 8, 23)),
     ("Regular Season Week 1", datetime(2025, 9, 4), datetime(2025, 9, 8)),
     ("Regular Season Week 2", datetime(2025, 9, 11), datetime(2025, 9, 15)),
     ("Regular Season Week 3", datetime(2025, 9, 18), datetime(2025, 9, 22)),
@@ -49,7 +49,7 @@ week_map = [
     ("Regular Season Week 15", datetime(2025, 12, 11), datetime(2025, 12, 15)),
     ("Regular Season Week 16", datetime(2025, 12, 18), datetime(2025, 12, 22)),
     ("Regular Season Week 17", datetime(2025, 12, 25), datetime(2025, 12, 29)),
-    ("Regular Season Week 18", datetime(2026, 1, 1), datetime(2026, 1, 5)),
+    ("Regular Season Week 18", datetime(2025, 1, 1), datetime(2026, 1, 5)),
 ]
 
 # Assign week based on date
@@ -59,14 +59,14 @@ def assign_week(date):
             return week_label
     return "Unknown"
 
-schedules_df['week'] = schedules_df['Date'].apply(assign_week)
+schedules_df['week'] = schedules_df['date'].apply(assign_week)
 
 # Get unique weeks and sort
 unique_weeks = list(dict.fromkeys(schedules_df['week'].dropna()))  # preserve order, remove duplicates
 
 # Generate week options
-preseason_weeks = [f"Pre-season Week {i}" for i in range(1, 5)]
-regular_season_weeks = [f"Regular Season Week {i}" for i in range(1, 19)]
+preseason_weeks = [f"PS Week {i}" for i in range(1, 5)]
+regular_season_weeks = [f"REG Season Week {i}" for i in range(1, 19)]
 all_weeks = preseason_weeks + regular_season_weeks
 
 # Create selectbox with custom week labels
@@ -75,6 +75,25 @@ selected_week = st.selectbox("Select Week", unique_weeks)
 # Filter the dataframe by the selected week
 filtered_df = schedules_df[schedules_df['week'] == selected_week]
 
+display_df = filtered_df.copy()
+display_df['date'] = display_df['date'].dt.strftime('%m-%d')
+
+# Rename columns for display
+display_df.columns = [
+    "Day",          # previously 'Day'
+    "Date",         # previously 'Date'
+    "Visitor",      # previously 'VisTm'
+    "V Pts",        # previously 'VisPts'
+    "At",           # previously 'At'
+    "Home",         # previously 'HomeTm'
+    "H Pts",        # previously 'HomePts'
+    "Time",         # previously 'Time'
+    "Week",         # previously 'week'
+]
+
+# Create a copy without the 'week' column
+display_df = display_df.drop(columns=['Week'])
+
 # Display filtered dataframe
-st.dataframe(filtered_df, use_container_width=True, hide_index=True)
+st.table(display_df.reset_index(drop=True))
 # ---------------------- Season Schedule ----------------------

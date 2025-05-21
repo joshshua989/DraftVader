@@ -3,10 +3,14 @@ import os
 import psutil
 import signal
 import math
+from datetime import datetime
 import pandas as pd
 import streamlit as st
 import value_vs_adp
 import spike_week_score
+import rookie_rankings
+import injury_reports
+from age_curve import apply_age_curve
 from load_data import get_adp_data, get_season_projections_qb, get_season_projections_rb
 from load_data import get_season_projections_wr, get_season_projections_te
 # ---------------------- LIBRARIES ----------------------
@@ -222,6 +226,18 @@ def undo_last_pick():
 
 
 # ---------------------- Script Functions ----------------------
+def update_player(df, this_year, data_year):
+    # Calculate how many years to increment
+    year_delta = this_year - data_year
+
+    # Automatically increment age based on year difference
+    df['age'] = df['age'] + year_delta
+
+    # Remove + and * from player names
+    df['player'] = df['player'].str.replace(r'[\+\*]', '', regex=True)
+
+    return df
+
 # Ensures that the draft follows a snake format, where the draft order reverses after each round.
 def get_team_picking():
     # st.session_state.pick_number is the current pick number in the draft.
@@ -287,18 +303,26 @@ def get_available_players(players_2025):
 # Initialize session state variables to ensure they have default values before the user interacts with the app.
 initialize_session_state()
 
-# ---------------------- NFL Player Stats .csv files - historical data ----------------------
+# Get the current year (e.g., 2025)
+current_year = datetime.now().year
+
+# ---------------------- Historical Data - NFL Player Stats .csv files ----------------------
+# ---------------------- Scrape Pro-Football-Reference ----------------------
 # Scrape NFL Player stats from Pro-Football-Reference.com
 # years = [2022, 2023, 2024]
 # for year in years:
 #     get_nfl_player_data(year, f"https://www.pro-football-reference.com/years/{year}/fantasy.htm")
+# ---------------------- Scrape Pro-Football-Reference ----------------------
 
-# Load the 2024 NFL Player stats .csv file
+# ---------------------- 2024 NFL Player Stats .csv ----------------------
+# Load the 2024 NFL Player stats .csv file - (must be above Player_Transactions.py data pulls)
 nfl_player_stats_2024_df = pd.read_csv('data_files/nfl_player_stats_2024.csv')
-# Remove + and * from player names
-nfl_player_stats_2024_df['player'] = nfl_player_stats_2024_df['player'].str.replace(r'[\+\*]', '', regex=True)
+
+nfl_player_stats_2024_df = update_player(nfl_player_stats_2024_df, current_year, 2024)
+
 # DataFrame saved in session_state
 st.session_state['nfl_player_stats_2024_df'] = nfl_player_stats_2024_df
+# ---------------------- 2024 NFL Player Stats .csv ----------------------
 
 # Load the 2023 NFL Player stats CSV file
 nfl_player_stats_2023_df = pd.read_csv('data_files/nfl_player_stats_2023.csv')
@@ -309,7 +333,7 @@ nfl_player_stats_2023_df['player'] = nfl_player_stats_2023_df['player'].str.repl
 nfl_player_stats_2022_df = pd.read_csv('data_files/nfl_player_stats_2022.csv')
 # Remove + and * from player names
 nfl_player_stats_2022_df['player'] = nfl_player_stats_2022_df['player'].str.replace(r'[\+\*]', '', regex=True)
-# ---------------------- NFL Player Stats .csv files - historical data ----------------------
+# ---------------------- Historical Data - NFL Player Stats .csv files ----------------------
 
 # ---------------------- ADP Rankings ----------------------
 # calls load_adp_data() function and stores a list of dictionaries in the adp_rankings variable
@@ -376,6 +400,27 @@ value_vs_adp_df = {
 seasons = [2024]
 boom_bust_df = spike_week_score.organize_by_condition(seasons)
 # ---------------------- Boom-Bust DataFrame ----------------------
+
+# ---------------------- Rookie Rankings DataFrame (must be above Player_Transactions.py data pulls) ----------------------
+rookie_rankings_df = rookie_rankings.get_rookie_rankings("data_files/all_rookie_rankings_2025.csv")
+st.session_state['rookie_rankings_df'] = rookie_rankings_df
+# ---------------------- Rookie Rankings DataFrame (must be above Player_Transactions.py data pulls) ----------------------
+
+# ---------------------- Injury Reports DataFrame ----------------------
+# List of pages to scrape
+urls = [
+    "https://www.fantasypros.com/nfl/injury-news.php",
+    "https://www.fantasypros.com/nfl/injury-news.php?page=2",
+    "https://www.fantasypros.com/nfl/injury-news.php?page=3",
+]
+injury_reports_df = injury_reports.get_injury_reports(urls)
+st.session_state['injury_reports_df'] = injury_reports_df
+# ---------------------- Injury Reports DataFrame ----------------------
+
+# ---------------------- Age Curve DataFrame ----------------------
+age_curve_mult_df = apply_age_curve(nfl_player_stats_2024_df)
+st.session_state['age_curve_mult_df'] = age_curve_mult_df
+# ---------------------- Age Curve DataFrame ----------------------
 # -------------------------------------------- DATA HANDLING - (BEGIN) --------------------------------------------
 
 
@@ -581,6 +626,7 @@ if player_choice:
         if not matched_player.empty:
             print("---------------------------------------------------------------")
             print("MATCH FOUND:\n")
+            # Assuming matched_player is a DataFrame with one row
             headers = [
                 'rank', 'player', 'team', 'pos', 'age', 'games', 'games_started', 'cmp',
                 'pass_att', 'pass_yds', 'pass_td', 'int', 'rush_att', 'rush_yds', 'yds_per_att',
@@ -589,10 +635,35 @@ if player_choice:
                 'draftkings_pts', 'fanduel_pts', 'value_based_draft', 'pos_rank', 'ovr_rank'
             ]
 
+            # Build a dictionary of non-zero fields
+            output_data = {}
             for field in headers:
                 value = matched_player[field].values[0]
-                if value != 0:
-                    print(f"{matched_player[field].name.capitalize()}: {value}")
+                if isinstance(value, str) or value != 0:
+                    # Keep field names lowercase with spaces (no capitalization)
+                    display_name = field.replace('_', ' ')
+                    output_data[display_name] = value
+
+            # Convert to DataFrame for easy display (e.g., in Streamlit or Jupyter)
+            output_df = pd.DataFrame.from_dict(output_data, orient='index', columns=['Value'])
+
+            # Optional: Reset index if you want it to look more like a 2-column table
+            output_df.reset_index(inplace=True)
+            output_df.columns = ['Field', 'Value']
+
+            fields_per_line = 4
+            total_fields = len(output_df)
+
+            # Print dataframe row to terminal with bold fields
+            for i in range(0, total_fields, fields_per_line):
+                line_items = []
+                for j in range(i, min(i + fields_per_line, total_fields)):
+                    field = output_df.Field.values[j]
+                    value = output_df.Value.values[j]
+                    bold_field = f"\033[1m{field}\033[0m"
+                    line_items.append(f"{bold_field}: {value}")
+                print(" | ".join(line_items))
+
             print("---------------------------------------------------------------")
         else:
             print("---------------------------------------------------------------")

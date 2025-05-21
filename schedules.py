@@ -6,6 +6,7 @@ import pandas as pd
 # ---------------------- Libraries ----------------------
 
 
+# ---------------------- get_schedules() ----------------------
 @st.cache_data
 def get_schedules(year, url):
 
@@ -54,3 +55,4 @@ def get_schedules(year, url):
     # print(f"Scraping complete. Data saved to nfl_schedule_{year}.csv")
 
     return df
+# ---------------------- get_schedules() ----------------------

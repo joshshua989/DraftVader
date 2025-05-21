@@ -13,6 +13,16 @@ if 'nfl_player_stats_2024_df' in st.session_state:
     nfl_player_stats_2024_df = st.session_state['nfl_player_stats_2024_df']
 else:
     st.write("No DataFrame found in session_state.")
+
+# Rookie Rankings DataFrame
+if 'rookie_rankings_df' in st.session_state:
+    rookie_rankings_df = st.session_state['rookie_rankings_df']
+    rookie_names = rookie_rankings_df['PLAYER NAME'].dropna().unique()
+    rookie_name_set = set(name.lower() for name in rookie_names)
+else:
+    rookie_names = []
+    rookie_name_set = set()
+    st.warning("No rookie rankings data found in session_state.")
 # ---------------------- Initialize Session State ----------------------
 
 
@@ -69,9 +79,12 @@ filtered_df = nfl_player_stats_2024_df[nfl_player_stats_2024_df['pos'].isin(['QB
 sorted_df = filtered_df.sort_values('ovr_rank').reset_index(drop=True)
 top_320_players_df = sorted_df.head(320)
 
-# Check if any player name appears in the selected transaction text
+# Combine top 320 player names and rookie names
+top_player_names = top_320_players_df['player'].dropna().unique()
+all_relevant_player_names = list(set(top_player_names) | set(rookie_names))
+
 matched_transactions = []
-top_player_names = top_320_players_df['player'].unique()
+rookie_flags = []
 
 # Helper to extract core first and last name, ignoring suffixes
 suffixes = {"jr", "sr", "ii", "iii", "iv", "v"}
@@ -82,19 +95,26 @@ def extract_first_last(name):
         return parts[0], parts[-1]
     return parts[0], ""
 
-# Process each transaction
+# Check if any player name appears in the selected transaction text
 for idx, row in selected_month_transactions.iterrows():
     transaction_text = row['Transaction']
     transaction_text_lower = transaction_text.lower()
-    for player_name in top_player_names:
+    for player_name in all_relevant_player_names:
         first, last = extract_first_last(player_name)
         if first in transaction_text_lower and last in transaction_text_lower:
             matched_transactions.append(row)
+            is_rookie = player_name.lower() in rookie_name_set
+            rookie_flags.append("Yes" if is_rookie else "No")
             break
 
-# Create and display relevant transactions, hide 'id' column
+# Create relevant DataFrame and add Rookie flag
 relevant_transactions_df = pd.DataFrame(matched_transactions)
-st.write(f"Player transactions for {selected_month}, {current_year}, sorted for relevance:")
-st.dataframe(relevant_transactions_df, use_container_width=True, hide_index=True)
+if not relevant_transactions_df.empty:
+    relevant_transactions_df['Rookie'] = rookie_flags
+
+    st.write(f"Player transactions for {selected_month}, {current_year}, sorted for relevance (including rookies):")
+    st.dataframe(relevant_transactions_df, use_container_width=True, hide_index=True)
+else:
+    st.info("No relevant transactions matched.")
 # ---------------------- Relevant Transactions DataFrame ----------------------
 # -------------------------------------------- Player Transactions --------------------------------------------

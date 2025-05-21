@@ -5,7 +5,7 @@ from load_data import load_nfl_player_data
 
 
 # ---------------------- NFL Player Data - loaded from .csv files ----------------------
-st.subheader("📋 NFL Historical Data")
+st.subheader("🏛️ NFL Historical Data")
 
 # Create four columns
 col1, col2, col3, col4 = st.columns(4)
