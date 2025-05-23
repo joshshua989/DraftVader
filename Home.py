@@ -6,13 +6,19 @@ import math
 from datetime import datetime
 import pandas as pd
 import streamlit as st
-import value_vs_adp
+from value_vs_adp import calculate_value_vs_adp
 import spike_week_score
 import rookie_rankings
 import injury_reports
 from age_curve import apply_age_curve
 from load_data import get_adp_data, get_season_projections_qb, get_season_projections_rb
 from load_data import get_season_projections_wr, get_season_projections_te
+from positional_scarcity import (
+    load_player_data,
+    calculate_value_over_replacement,
+    calculate_positional_tiers,
+    get_scarcity_score
+)
 # ---------------------- LIBRARIES ----------------------
 
 
@@ -193,24 +199,6 @@ def apply_selectbox_style():
 # ---------------------- Style Functions ----------------------
 
 
-# ---------------------- HEADER ----------------------
-# Print styled header
-title = "🏈 DRAFT VADER 1.0" # 🗣
-st.markdown(
-        f"<h1 style='text-align: center; font-size: 48px; color: #0098f5;'>{title}</h1>",
-        unsafe_allow_html=True
-    )
-st.write("")
-st.markdown("<p style='color: lightblue;'>🤖 "
-            "<strong>"
-                "Welcome to NFL Best Ball Draft 2025!"
-            "</strong></p>", unsafe_allow_html=True)
-st.markdown("<p style='color: lightblue;'>🤖 "
-            "<strong>I will be your personal AI assistant for the draft!</strong></p>", unsafe_allow_html=True)
-st.write("---")
-# ---------------------- HEADER ----------------------
-
-
 # ---------------------- Button Callbacks ----------------------
 def next_pick():
     st.session_state.last_pick = None
@@ -226,15 +214,13 @@ def undo_last_pick():
 
 
 # ---------------------- Script Functions ----------------------
+# Update player age
 def update_player(df, this_year, data_year):
     # Calculate how many years to increment
     year_delta = this_year - data_year
 
     # Automatically increment age based on year difference
     df['age'] = df['age'] + year_delta
-
-    # Remove + and * from player names
-    df['player'] = df['player'].str.replace(r'[\+\*]', '', regex=True)
 
     return df
 
@@ -300,6 +286,8 @@ def get_available_players(players_2025):
 
 
 # -------------------------------------------- DATA HANDLING - (BEGIN) --------------------------------------------
+# TODO: Update initial defaults in session state
+
 # Initialize session state variables to ensure they have default values before the user interacts with the app.
 initialize_session_state()
 
@@ -310,6 +298,7 @@ current_year = datetime.now().year
 # ---------------------- Scrape Pro-Football-Reference ----------------------
 # Scrape NFL Player stats from Pro-Football-Reference.com
 # years = [2022, 2023, 2024]
+
 # for year in years:
 #     get_nfl_player_data(year, f"https://www.pro-football-reference.com/years/{year}/fantasy.htm")
 # ---------------------- Scrape Pro-Football-Reference ----------------------
@@ -318,22 +307,30 @@ current_year = datetime.now().year
 # Load the 2024 NFL Player stats .csv file - (must be above Player_Transactions.py data pulls)
 nfl_player_stats_2024_df = pd.read_csv('data_files/nfl_player_stats_2024.csv')
 
-nfl_player_stats_2024_df = update_player(nfl_player_stats_2024_df, current_year, 2024)
+# Remove + and * from player names
+nfl_player_stats_2024_df['player'] = nfl_player_stats_2024_df['player'].str.replace(r'[\+\*]', '', regex=True)
 
 # DataFrame saved in session_state
 st.session_state['nfl_player_stats_2024_df'] = nfl_player_stats_2024_df
 # ---------------------- 2024 NFL Player Stats .csv ----------------------
 
+# ---------------------- 2023 NFL Player Stats .csv ----------------------
 # Load the 2023 NFL Player stats CSV file
 nfl_player_stats_2023_df = pd.read_csv('data_files/nfl_player_stats_2023.csv')
+
 # Remove + and * from player names
 nfl_player_stats_2023_df['player'] = nfl_player_stats_2023_df['player'].str.replace(r'[\+\*]', '', regex=True)
+# ---------------------- 2023 NFL Player Stats .csv ----------------------
 
+# ---------------------- 2022 NFL Player Stats .csv ----------------------
 # Load the 2022 NFL Player stats CSV file
 nfl_player_stats_2022_df = pd.read_csv('data_files/nfl_player_stats_2022.csv')
+
 # Remove + and * from player names
 nfl_player_stats_2022_df['player'] = nfl_player_stats_2022_df['player'].str.replace(r'[\+\*]', '', regex=True)
+# ---------------------- 2022 NFL Player Stats .csv ----------------------
 # ---------------------- Historical Data - NFL Player Stats .csv files ----------------------
+
 
 # ---------------------- ADP Rankings ----------------------
 # calls load_adp_data() function and stores a list of dictionaries in the adp_rankings variable
@@ -341,16 +338,20 @@ nfl_player_stats_2022_df['player'] = nfl_player_stats_2022_df['player'].str.repl
 adp_rankings = get_adp_data('https://www.fantasypros.com/nfl/adp/best-ball-overall.php')
 
 # Filters the adp_rankings list of player dictionaries to create separate lists for each position (QB, RB, WR, TE).
-adp_data_qb = [player for player in adp_rankings if player.get("pos") == "QB"]
+adp_rankings_qb = [player for player in adp_rankings if player.get("pos") == "QB"]
 # DataFrame saved in session_state
-st.session_state['adp_data_qb'] = adp_data_qb
-adp_data_rb = [player for player in adp_rankings if player.get("pos") == "RB"]
-st.session_state['adp_data_rb'] = adp_data_rb
-adp_data_wr = [player for player in adp_rankings if player.get("pos") == "WR"]
-st.session_state['adp_data_wr'] = adp_data_wr
-adp_data_te = [player for player in adp_rankings if player.get("pos") == "TE"]
-st.session_state['adp_data_te'] = adp_data_te
+st.session_state['adp_data_qb'] = adp_rankings_qb
+
+adp_rankings_rb = [player for player in adp_rankings if player.get("pos") == "RB"]
+st.session_state['adp_data_rb'] = adp_rankings_rb
+
+adp_rankings_wr = [player for player in adp_rankings if player.get("pos") == "WR"]
+st.session_state['adp_data_wr'] = adp_rankings_wr
+
+adp_rankings_te = [player for player in adp_rankings if player.get("pos") == "TE"]
+st.session_state['adp_data_te'] = adp_rankings_te
 # ---------------------- ADP Rankings ----------------------
+
 
 # ---------------------- Season Projections ----------------------
 # [{'name': name, 'team': team, 'pass_att': pass_att, 'pass_cmp': pass_cmp, 'pass_yds': pass_yds, 'pass_tds': pass_tds,
@@ -359,32 +360,64 @@ st.session_state['adp_data_te'] = adp_data_te
 season_projections_qb = get_season_projections_qb('https://www.fantasypros.com/nfl/projections/qb.php?week=draft')
 # DataFrame saved in session_state
 st.session_state['season_projections_qb'] = season_projections_qb
+
 # [{'name': name, 'team': team, 'rush_att': rush_att, 'rush_yds': rush_yds, 'rush_tds': rush_tds, 'rec': rec,
 #     'rec_yds': rec_yds, 'rec_tds': rec_tds, 'fumbles': fumbles, 'proj_points': proj_points}]
 season_projections_rb = get_season_projections_rb('https://www.fantasypros.com/nfl/projections/rb.php?week=draft&scoring=PPR&week=draft')
 st.session_state['season_projections_rb'] = season_projections_rb
+
 # [{'name': name, 'team': team, 'rec': rec, 'rec_yds': rec_yds, 'rec_tds': rec_tds, 'rush_att': rush_att,
 #     'rush_yds': rush_yds, 'rush_tds': rush_tds, 'fumbles': fumbles, 'proj_points': proj_points}]
 season_projections_wr = get_season_projections_wr('https://www.fantasypros.com/nfl/projections/wr.php?week=draft&scoring=PPR&week=draft')
 st.session_state['season_projections_wr'] = season_projections_wr
+
 # [{'name': name, 'team': team, 'rec': rec, 'rec_yds': rec_yds, 'rec_tds': rec_tds, 'fumbles': fumbles,
 #     'proj_points': proj_points}]
 season_projections_te = get_season_projections_te('https://www.fantasypros.com/nfl/projections/te.php?week=draft&scoring=PPR&week=draft')
 st.session_state['season_projections_te'] = season_projections_te
+
 # # [{'name': name, 'team': team, 'fg': fg, 'fga': fga, 'xpt': xpt, 'proj_points': proj_points}]
 # season_projections_k = get_season_projections_k('https://www.fantasypros.com/nfl/projections/k.php?week=draft')
+
 # # [{'team': team, 'sack': sack, 'int': int, 'fr': fr, 'ff': ff, 'td': td, 'safety': safety, 'pa': pa,
 # #     'yds_agn': yds_agn, 'proj_points': proj_points}]
 # season_projections_dst = get_season_projections_dst()
+
+# TODO: Change the following code so that ['pos'] is added after ['team'] in the dataframe that is created
+
+# Add 'Position' column to each DataFrame
+season_projections_df_qb = pd.DataFrame(season_projections_qb)
+season_projections_df_qb['pos'] = 'QB'
+season_projections_df_rb = pd.DataFrame(season_projections_rb)
+season_projections_df_rb['pos'] = 'RB'
+season_projections_df_wr = pd.DataFrame(season_projections_wr)
+season_projections_df_wr['pos'] = 'WR'
+season_projections_df_te = pd.DataFrame(season_projections_te)
+season_projections_df_te['pos'] = 'TE'
+
+# Create a list of season projection dfs
+season_projections_df_all = pd.concat([
+    season_projections_df_qb,
+    season_projections_df_rb,
+    season_projections_df_wr,
+    season_projections_df_te
+], ignore_index=True)
+
+# Optionally store it in session state
+# st.session_state['season_projections_all'] = season_projections_all
+
+# Optionally store cleaned DataFrame for export or debugging
+# season_projections_all.to_csv("cleaned_projections.csv", index=False)
 # ---------------------- Season Projections ----------------------
+
 
 # ---------------------- Value vs ADP DataFrame ----------------------
 # Calculates the implied points vs. ADP for each position (QB, RB, WR, TE) using a function called
 # calculate_value_vs_adp() from the implied_points module.
-value_vs_adp_df_qb = value_vs_adp.calculate_value_vs_adp("QB", adp_data_qb, season_projections_qb, False)
-value_vs_adp_df_rb = value_vs_adp.calculate_value_vs_adp("RB", adp_data_rb, season_projections_rb, False)
-value_vs_adp_df_wr = value_vs_adp.calculate_value_vs_adp("WR", adp_data_wr, season_projections_wr, False)
-value_vs_adp_df_te = value_vs_adp.calculate_value_vs_adp("TE", adp_data_te, season_projections_te, False)
+value_vs_adp_df_qb = calculate_value_vs_adp("QB", adp_rankings_qb, season_projections_qb, False)
+value_vs_adp_df_rb = calculate_value_vs_adp("RB", adp_rankings_rb, season_projections_rb, False)
+value_vs_adp_df_wr = calculate_value_vs_adp("WR", adp_rankings_wr, season_projections_wr, False)
+value_vs_adp_df_te = calculate_value_vs_adp("TE", adp_rankings_te, season_projections_te, False)
 
 # Define a dictionary to map position to the corresponding value_vs_adp dataframe
 value_vs_adp_df = {
@@ -395,16 +428,30 @@ value_vs_adp_df = {
 }
 # ---------------------- Value vs ADP DataFrame ----------------------
 
+
+# ---------------------- Positional Scarcity ----------------------
+positional_scarcity_df = load_player_data(season_projections_df_all)
+positional_scarcity_df = calculate_value_over_replacement(positional_scarcity_df)
+positional_scarcity_df = calculate_positional_tiers(positional_scarcity_df)
+positional_scarcity_df = get_scarcity_score(positional_scarcity_df)
+
+# Store positional_scarcity_df variable in session state
+st.session_state['positional_scarcity_df'] = positional_scarcity_df
+# ---------------------- Positional Scarcity ----------------------
+
+
 # ---------------------- Boom-Bust DataFrame ----------------------
 # Calculates the Boom-Bust DataFrame for players based on a list of seasons, specifically for the year
 seasons = [2024]
 boom_bust_df = spike_week_score.organize_by_condition(seasons)
 # ---------------------- Boom-Bust DataFrame ----------------------
 
+
 # ---------------------- Rookie Rankings DataFrame (must be above Player_Transactions.py data pulls) ----------------------
 rookie_rankings_df = rookie_rankings.get_rookie_rankings("data_files/all_rookie_rankings_2025.csv")
 st.session_state['rookie_rankings_df'] = rookie_rankings_df
 # ---------------------- Rookie Rankings DataFrame (must be above Player_Transactions.py data pulls) ----------------------
+
 
 # ---------------------- Injury Reports DataFrame ----------------------
 # List of pages to scrape
@@ -417,9 +464,15 @@ injury_reports_df = injury_reports.get_injury_reports(urls)
 st.session_state['injury_reports_df'] = injury_reports_df
 # ---------------------- Injury Reports DataFrame ----------------------
 
+
 # ---------------------- Age Curve DataFrame ----------------------
-age_curve_mult_df = apply_age_curve(nfl_player_stats_2024_df)
-st.session_state['age_curve_mult_df'] = age_curve_mult_df
+# Update player age
+updated_stats_df = update_player(nfl_player_stats_2024_df, current_year, 2024)
+
+age_curve_df = apply_age_curve(updated_stats_df)
+
+# DataFrame saved in session_state
+st.session_state['age_curve_df'] = age_curve_df
 # ---------------------- Age Curve DataFrame ----------------------
 # -------------------------------------------- DATA HANDLING - (BEGIN) --------------------------------------------
 
@@ -430,6 +483,23 @@ apply_df_scrollbar_style()
 
 
 # -------------------------------------------- USER INTERFACE --------------------------------------------
+# ---------------------- HEADER ----------------------
+# Print styled header
+title = "🏈 DRAFT VADER 1.0" # 🗣
+st.markdown(
+        f"<h1 style='text-align: center; font-size: 48px; color: #0098f5;'>{title}</h1>",
+        unsafe_allow_html=True
+    )
+st.write("")
+st.markdown("<p style='color: lightblue;'>🤖 "
+            "<strong>"
+                "Welcome to NFL Best Ball Draft 2025!"
+            "</strong></p>", unsafe_allow_html=True)
+st.markdown("<p style='color: lightblue;'>🤖 "
+            "<strong>I will be your personal AI assistant for the draft!</strong></p>", unsafe_allow_html=True)
+st.write("---")
+# ---------------------- HEADER ----------------------
+
 # ---------------------- Draft Controller ----------------------
 # Determines which team is currently making a draft pick in a snake draft format.
 team_picking_int = get_team_picking()

@@ -107,7 +107,7 @@ def apply_age_curve(df: pd.DataFrame) -> pd.DataFrame:
     df['age_risk_tag'] = df.apply(lambda row: get_age_tag(row['pos'], row['age']), axis=1)
 
     # Select only the desired columns
-    age_curve_mult_df = df[['player', 'team', 'pos', 'age', 'age_curve_multiplier', 'age_risk_tag']]
+    age_curve_df = df[['player', 'team', 'pos', 'age', 'age_curve_multiplier', 'age_risk_tag']]
 
-    return age_curve_mult_df
+    return age_curve_df
 # ---------------------- Age Curve Multiplier and Risk Tag DataFrame ----------------------
